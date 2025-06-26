@@ -12,8 +12,8 @@ export const getCalculationSettings = query({
 
 export const saveCalculationSettings = mutation({
   args: {
-    modelName: v.string(),
-    temperature: v.number(),
+    modelNames: v.array(v.string()), // Accept an array of model names
+    temperatures: v.array(v.number()), // Accept an array of temperatures
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -22,18 +22,18 @@ export const saveCalculationSettings = mutation({
     const existingSettings = await ctx.db.query("calculationSettings").first();
 
     if (existingSettings) {
-      // Update existing settings
+      // Update existing settings with the new model names and temperatures
       await ctx.db.patch(existingSettings._id, {
-        modelName: args.modelName,
-        temperature: args.temperature,
+        modelNames: args.modelNames,
+        temperatures: args.temperatures,
         updatedAt: now,
       });
       return existingSettings._id;
     } else {
-      // Create new calculation settings
+      // Create new calculation settings record with model names and temperatures
       const settingsId = await ctx.db.insert("calculationSettings", {
-        modelName: args.modelName,
-        temperature: args.temperature,
+        modelNames: args.modelNames,
+        temperatures: args.temperatures,
         createdAt: now,
         updatedAt: now,
       });

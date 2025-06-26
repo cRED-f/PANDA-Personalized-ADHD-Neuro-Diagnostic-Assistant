@@ -7,9 +7,9 @@ export const getChatAnalysis = query({
   handler: async (ctx, args) => {
     const analysis = await ctx.db
       .query("chatAnalyses")
-      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
+      .withIndex("by_chat_and_model", (q) => q.eq("chatId", args.chatId))
       .order("desc")
-      .first();
+      .collect(); // Changed to collect to return all the analyses
     return analysis;
   },
 });
@@ -28,18 +28,8 @@ export const saveAnalysis = mutation({
   handler: async (ctx, args) => {
     const now = Date.now();
 
-    // Delete any existing analysis for this chat
-    const existingAnalysis = await ctx.db
-      .query("chatAnalyses")
-      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
-      .first();
-
-    if (existingAnalysis) {
-      await ctx.db.delete(existingAnalysis._id);
-    }
-
-    // Create new analysis record
-    const analysisId = await ctx.db.insert("chatAnalyses", {
+    // We will store separate records for each model's result
+    const analysisData = {
       chatId: args.chatId,
       promptId: args.promptId,
       promptName: args.promptName,
@@ -48,22 +38,27 @@ export const saveAnalysis = mutation({
       temperature: args.temperature,
       result: args.result,
       createdAt: now,
-    });
+      updatedAt: now, // Add updatedAt for tracking
+    };
+
+    // Create new analysis record for each model's result
+    const analysisId = await ctx.db.insert("chatAnalyses", analysisData);
 
     return analysisId;
   },
 });
 
-// Delete analysis for a chat
+// Delete analysis for a chat (this will delete all analysis results for the chat)
 export const deleteAnalysis = mutation({
   args: { chatId: v.string() },
   handler: async (ctx, args) => {
-    const analysis = await ctx.db
+    const analyses = await ctx.db
       .query("chatAnalyses")
-      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
-      .first();
+      .withIndex("by_chat_and_model", (q) => q.eq("chatId", args.chatId))
+      .collect(); // Collect all the analyses for this chat
 
-    if (analysis) {
+    // Delete all analysis records related to this chat
+    for (const analysis of analyses) {
       await ctx.db.delete(analysis._id);
     }
   },

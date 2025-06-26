@@ -76,7 +76,13 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
       },
     },
   };
-
+  const removeNotes = (content: string) => {
+    // Remove content inside parentheses and asterisks (bold formatting)
+    return content
+      .replace(/\(.*?\)/g, "")
+      .replace(/\*\*/g, "")
+      .trim();
+  };
   return (
     <motion.div
       variants={messageVariants}
@@ -89,8 +95,8 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
           : isMentor
             ? "bg-red-50/60"
             : isAI
-              ? "bg-emerald-50/60"
-              : "bg-blue-50/40"
+              ? "bg-emerald-50/60" // AI background color
+              : "bg-blue-50/40" // User background color (set for the user message)
       )}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
@@ -107,10 +113,9 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
                   ? "bg-gradient-to-br from-red-500 via-rose-500 to-pink-600 text-white shadow-lg border-red-300/50"
                   : isAI
                     ? "bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 text-white shadow-lg border-emerald-300/50"
-                    : "bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 text-white shadow-lg border-blue-300/50"
+                    : "bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 text-white shadow-lg border-blue-300/50" // User avatar
             )}
           >
-            {" "}
             {isAssistant ? (
               <IconBrain size={18} className="drop-shadow-sm" />
             ) : isMentor ? (
@@ -118,172 +123,65 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
             ) : isAI ? (
               <IconFileTextAi size={18} className="drop-shadow-sm" />
             ) : (
-              <IconUser size={18} className="drop-shadow-sm" />
+              <IconUser size={18} className="drop-shadow-sm" /> // User icon
             )}
           </div>
-        </div>{" "}
+        </div>
+
         {/* Content */}
         <div className="flex-1 space-y-2">
-          {" "}
-          {/* Assistant Reminder - Always shown for assistant messages with overflow handling */}
-          {isAssistant && reminderContent && (
-            <div className="mb-3 p-3 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg">
-              <div className="flex items-start space-x-2">
-                <div className="flex-shrink-0 mt-0.5">
-                  <svg
-                    className="w-4 h-4 text-amber-600"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <p className="text-sm font-medium text-amber-800">
-                    Assistant Reminder
-                  </p>{" "}
-                  <div className="text-sm text-amber-700 mt-1 prose prose-sm max-w-none overflow-auto max-h-60">
-                    <ReactMarkdown
-                      components={{
-                        pre: (props) => (
-                          <pre
-                            className="overflow-auto max-w-full whitespace-pre-wrap bg-amber-100 p-2 rounded text-sm"
-                            {...props}
-                          />
-                        ),
-                        code: (props) => (
-                          <code
-                            className="break-all bg-amber-100 px-1 py-0.5 rounded text-sm"
-                            {...props}
-                          />
-                        ),
-                        p: (props) => (
-                          <p
-                            className="mb-2 last:mb-0 leading-relaxed"
-                            {...props}
-                          />
-                        ),
-                      }}
-                    >
-                      {reminderContent}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-              </div>{" "}
-            </div>
-          )}
-          {/* Mentor Reminder - Always shown for mentor messages with overflow handling */}
-          {isMentor && (
-            <div className="mb-3 p-3 bg-red-50 border-l-4 border-red-400 rounded-r-lg">
-              <div className="flex items-start space-x-2">
-                <div className="flex-shrink-0 mt-0.5">
-                  <IconCompass className="w-4 h-4 text-red-600" />
-                </div>
-                <div className="flex-1 overflow-hidden">
-                  <p className="text-sm font-medium text-red-800">
-                    Mentor Reminder
-                  </p>{" "}
-                  <div className="text-sm text-red-700 mt-1 prose prose-sm max-w-none overflow-auto max-h-60">
-                    <ReactMarkdown
-                      components={{
-                        pre: (props) => (
-                          <pre
-                            className="overflow-auto max-w-full whitespace-pre-wrap bg-red-100 p-2 rounded text-sm"
-                            {...props}
-                          />
-                        ),
-                        code: (props) => (
-                          <code
-                            className="break-all bg-red-100 px-1 py-0.5 rounded text-sm"
-                            {...props}
-                          />
-                        ),
-                        p: (props) => (
-                          <p
-                            className="mb-2 last:mb-0 leading-relaxed"
-                            {...props}
-                          />
-                        ),
-                      }}
-                    >
-                      {message.content}
-                    </ReactMarkdown>
-                  </div>
-                </div>
-              </div>{" "}
-            </div>
-          )}{" "}
-          {/* AI Response Content with left border styling */}
+          {/* AI Message */}
           {isAI && (
-            <div className="border-l-4 border-emerald-400 pl-4  prose prose-sm max-w-none text-gray-900">
+            <div className="border-l-4 border-emerald-400 pl-4 py-2 bg-emerald-50 rounded-lg shadow-sm max-w-full">
               <ReactMarkdown
                 components={{
                   pre: (props) => (
                     <pre
-                      className="overflow-auto max-w-full  p-3 rounded text-sm  whitespace-pre-wrap"
+                      className="overflow-auto max-w-full p-3 rounded text-sm whitespace-pre-wrap bg-emerald-100"
                       {...props}
                     />
                   ),
                   code: (props) => (
                     <code
-                      className="break-words bg-gray-200 px-1.5 py-0.5 rounded text-sm "
+                      className="break-words bg-emerald-100 px-2 py-1 rounded text-sm"
                       {...props}
                     />
                   ),
                   p: (props) => (
                     <p
-                      className="mb-3 last:mb-0 leading-7 text-gray-800"
+                      className="mb-2 last:mb-0 leading-relaxed text-gray-800"
                       {...props}
                     />
                   ),
-                  h1: (props) => (
-                    <h1
-                      className="text-xl font-bold mb-4 mt-6 first:mt-0 text-gray-900"
+                }}
+              >
+                {removeNotes(message.content)}
+              </ReactMarkdown>
+            </div>
+          )}
+
+          {/* User Message */}
+          {!isAssistant && !isMentor && !isAI && (
+            <div className="border-l-4 border-blue-400 pl-4 py-2 bg-blue-50 rounded-lg shadow-sm max-w-full">
+              <ReactMarkdown
+                components={{
+                  pre: (props) => (
+                    <pre
+                      className="overflow-auto max-w-full p-3 rounded text-sm whitespace-pre-wrap bg-blue-100"
                       {...props}
                     />
                   ),
-                  h2: (props) => (
-                    <h2
-                      className="text-lg font-semibold mb-3 mt-5 first:mt-0 text-gray-900"
+                  code: (props) => (
+                    <code
+                      className="break-words bg-blue-100 px-2 py-1 rounded text-sm"
                       {...props}
                     />
                   ),
-                  h3: (props) => (
-                    <h3
-                      className="text-base font-semibold mb-2 mt-4 first:mt-0 text-gray-900"
+                  p: (props) => (
+                    <p
+                      className="mb-2 last:mb-0 leading-relaxed text-gray-800"
                       {...props}
                     />
-                  ),
-                  ul: (props) => (
-                    <ul className="list-disc pl-6 mb-4 space-y-2" {...props} />
-                  ),
-                  ol: (props) => (
-                    <ol
-                      className="list-decimal pl-6 mb-4 space-y-2"
-                      {...props}
-                    />
-                  ),
-                  li: (props) => (
-                    <li className="leading-7 text-gray-800" {...props} />
-                  ),
-                  blockquote: (props) => (
-                    <blockquote
-                      className="border-l-4 border-gray-300 pl-4 italic mb-4 text-gray-700"
-                      {...props}
-                    />
-                  ),
-                  strong: (props) => (
-                    <strong
-                      className="font-semibold text-gray-900"
-                      {...props}
-                    />
-                  ),
-                  em: (props) => (
-                    <em className="italic text-gray-800" {...props} />
                   ),
                 }}
               >
@@ -291,69 +189,23 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
               </ReactMarkdown>
             </div>
           )}
-          {((cleanContent && !isMentor && !isAI) ||
-            (!isAssistant && !isMentor && !isAI)) && (
-            <div className="prose prose-sm max-w-none text-gray-900">
-              <ReactMarkdown
-                components={{
-                  pre: (props) => (
-                    <pre
-                      className="overflow-auto max-w-full whitespace-pre-wrap bg-gray-100 p-2 rounded text-sm"
-                      {...props}
-                    />
-                  ),
-                  code: (props) => (
-                    <code
-                      className="break-all bg-gray-100 px-1 py-0.5 rounded text-sm"
-                      {...props}
-                    />
-                  ),
-                  p: (props) => (
-                    <p className="mb-3 last:mb-0 leading-relaxed" {...props} />
-                  ),
-                  h1: (props) => (
-                    <h1
-                      className="text-lg font-bold mb-3 mt-4 first:mt-0"
-                      {...props}
-                    />
-                  ),
-                  h2: (props) => (
-                    <h2
-                      className="text-base font-bold mb-2 mt-3 first:mt-0"
-                      {...props}
-                    />
-                  ),
-                  h3: (props) => (
-                    <h3
-                      className="text-sm font-bold mb-2 mt-3 first:mt-0"
-                      {...props}
-                    />
-                  ),
-                  ul: (props) => (
-                    <ul className="list-disc pl-5 mb-3 space-y-1" {...props} />
-                  ),
-                  ol: (props) => (
-                    <ol
-                      className="list-decimal pl-5 mb-3 space-y-1"
-                      {...props}
-                    />
-                  ),
-                  li: (props) => <li className="leading-relaxed" {...props} />,
-                  blockquote: (props) => (
-                    <blockquote
-                      className="border-l-4 border-gray-300 pl-4 italic mb-3"
-                      {...props}
-                    />
-                  ),
-                }}
-              >
-                {!isAssistant && !isMentor && !isAI
-                  ? message.content
-                  : cleanContent}
-              </ReactMarkdown>
+
+          {/* Assistant and Mentor Messages */}
+          {isAssistant && reminderContent && (
+            <div className="mb-3 p-3 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg">
+              {/* Assistant Reminder Content */}
+              <ReactMarkdown>{reminderContent}</ReactMarkdown>
+            </div>
+          )}
+
+          {isMentor && reminderContent && (
+            <div className="mb-3 p-3 bg-red-50 border-l-4 border-red-400 rounded-r-lg">
+              {/* Mentor Reminder Content */}
+              <ReactMarkdown>{reminderContent}</ReactMarkdown>
             </div>
           )}
         </div>
+
         {/* Action Buttons */}
         <div
           className={cn(
@@ -375,7 +227,7 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
                 <IconCopy size={14} />
               </Button>
             }
-          />{" "}
+          />
           {message.role === "user" && onEdit && (
             <WithTooltip
               delayDuration={1000}

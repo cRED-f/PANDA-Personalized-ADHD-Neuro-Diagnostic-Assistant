@@ -36,7 +36,10 @@ export default defineSchema({
         v.literal("main"),
         v.literal("assistant"),
         v.literal("mentor"),
-        v.literal("calculate-main-model")
+        v.literal("calculate-1"),
+        v.literal("calculate-2"),
+        v.literal("calculate-3"),
+        v.literal("calculate-4")
       )
     ),
     createdAt: v.number(),
@@ -63,8 +66,8 @@ export default defineSchema({
     updatedAt: v.number(),
   }),
   calculationSettings: defineTable({
-    modelName: v.string(),
-    temperature: v.number(),
+    modelNames: v.array(v.string()),
+    temperatures: v.array(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }),
@@ -77,5 +80,6 @@ export default defineSchema({
     temperature: v.number(),
     result: v.string(),
     createdAt: v.number(),
-  }).index("by_chat", ["chatId"]),
+    updatedAt: v.number(),
+  }).index("by_chat_and_model", ["chatId", "modelName"]),
 });

@@ -14,8 +14,16 @@ interface CalculationSettingsProps {
 
 const CalculationSettings: FC<CalculationSettingsProps> = () => {
   const [isEditing, setIsEditing] = useState(false);
-  const [modelName, setModelName] = useState("anthropic/claude-3.5-sonnet");
-  const [temperature, setTemperature] = useState(0.7);
+
+  // State to hold model names and temperatures
+  const [modelNames, setModelNames] = useState([
+    "anthropic/claude-3.5-sonnet",
+    "gpt-3.5-turbo",
+    "gpt-4",
+    "bert-base-uncased",
+  ]);
+
+  const [temperatures, setTemperatures] = useState([0.7, 0.7, 0.7, 0.7]);
 
   // Query to get calculation settings from database
   const calculationSettings = useQuery(
@@ -30,8 +38,10 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
   // Load settings from database when component mounts or settings change
   useEffect(() => {
     if (calculationSettings) {
-      setModelName(calculationSettings.modelName);
-      setTemperature(calculationSettings.temperature);
+      const { modelNames: savedModelNames, temperatures: savedTemperatures } =
+        calculationSettings;
+      setModelNames(savedModelNames || modelNames);
+      setTemperatures(savedTemperatures || temperatures);
     }
   }, [calculationSettings]);
 
@@ -42,8 +52,8 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
   const handleSave = async () => {
     try {
       await saveCalculationSettings({
-        modelName,
-        temperature,
+        modelNames,
+        temperatures,
       });
       setIsEditing(false);
       console.log("Settings saved successfully");
@@ -59,30 +69,43 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
       </h2>
 
       <div className="space-y-4">
-        <div>
-          <Label htmlFor="model-name">Model Name</Label>
-          <Input
-            id="model-name"
-            value={modelName}
-            onChange={(e) => setModelName(e.target.value)}
-            disabled={!isEditing}
-            className="mt-1"
-          />
-        </div>
-        <div>
-          <Label htmlFor="temperature">Temperature</Label>
-          <Input
-            id="temperature"
-            type="number"
-            min="0"
-            max="2"
-            step="0.1"
-            value={temperature}
-            onChange={(e) => setTemperature(parseFloat(e.target.value))}
-            disabled={!isEditing}
-            className="mt-1"
-          />
-        </div>{" "}
+        {modelNames.map((modelName, index) => (
+          <div key={index}>
+            <Label htmlFor={`model-name-${index}`}>
+              Model Name {index + 1}
+            </Label>
+            <Input
+              id={`model-name-${index}`}
+              value={modelName}
+              onChange={(e) => {
+                const newModelNames = [...modelNames];
+                newModelNames[index] = e.target.value;
+                setModelNames(newModelNames);
+              }}
+              disabled={!isEditing}
+              className="mt-1"
+            />
+            <Label htmlFor={`temperature-${index}`} className="mt-2">
+              Temperature {index + 1}
+            </Label>
+            <Input
+              id={`temperature-${index}`}
+              type="number"
+              min="0"
+              max="2"
+              step="0.1"
+              value={temperatures[index]}
+              onChange={(e) => {
+                const newTemperatures = [...temperatures];
+                newTemperatures[index] = parseFloat(e.target.value);
+                setTemperatures(newTemperatures);
+              }}
+              disabled={!isEditing}
+              className="mt-1"
+            />
+          </div>
+        ))}
+
         <div className="pt-4">
           {!isEditing ? (
             <Button

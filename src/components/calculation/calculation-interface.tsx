@@ -21,17 +21,36 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   selectedChatId,
 }) => {
   const [showModal, setShowModal] = useState(false);
-  const [selectedPrompt, setSelectedPrompt] = useState<string | null>(null);
+  const [selectedPrompts, setSelectedPrompts] = useState<string[]>([]); // For storing selected prompts for each model
   const [analysisStarted, setAnalysisStarted] = useState(false);
-  const [analysisResult, setAnalysisResult] = useState<string | null>(null);
+  const [analysisResults, setAnalysisResults] = useState<string[]>([]); // Store results for all models
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
 
-  // Get calculate-main-model prompts
-  const allPrompts = useQuery(api.prompts.getPrompts) || [];
-  const calculatePrompts = allPrompts.filter(
-    (prompt) => prompt.targetModel === "calculate-main-model"
+  // Get calculation settings (including model names)
+  const calculationSettings = useQuery(
+    api.calculationSettings.getCalculationSettings
   );
+
+  // Get available prompts for the models
+  const allPrompts = useQuery(api.prompts.getPrompts) || [];
+
+  // Static model names
+  const modelNames = [
+    "calculate-1",
+    "calculate-2",
+    "calculate-3",
+    "calculate-4",
+  ];
+
+  // Fetch prompts for each model based on the static model names
+  const modelPrompts = modelNames.map((modelName) => {
+    return (
+      useQuery(api.prompts.getPromptsByTarget, {
+        targetModel: modelName,
+      }) || []
+    );
+  });
 
   // Get the selected chat data
   const chats = useQuery(api.messages.getChats) || [];
@@ -43,10 +62,6 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
     selectedChatId ? { chatId: selectedChatId } : "skip"
   );
 
-  // Get calculation settings
-  const calculationSettings = useQuery(
-    api.calculationSettings.getCalculationSettings
-  );
   // Get API settings for OpenRouter
   const apiSettings = useQuery(api.settings.getApiSettings);
 
@@ -66,126 +81,100 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
     isGenerating,
     error: openRouterError,
   } = useOpenRouter(apiSettings?.apiKey);
+
   // Reset analysis state when chat changes or load existing analysis
   useEffect(() => {
     if (existingAnalysis) {
       // Load existing analysis
       setAnalysisStarted(true);
-      setAnalysisResult(existingAnalysis.result);
-      setSelectedPrompt(existingAnalysis.promptId);
+      setAnalysisResults(existingAnalysis.map((a) => a.result)); // Collect results from all analyses
+      setSelectedPrompts(existingAnalysis.map((a) => a.promptId));
       setIsAnalyzing(false);
       setAnalysisError(null);
     } else {
       // Reset state for new chat or no existing analysis
       setAnalysisStarted(false);
-      setAnalysisResult(null);
+      setAnalysisResults([]);
       setAnalysisError(null);
-      setSelectedPrompt(null);
+      setSelectedPrompts([]);
       setIsAnalyzing(false);
     }
   }, [selectedChatId, existingAnalysis]);
 
-  const handleStartAnalysis = () => {
-    setShowModal(true);
-  };
-  const handleCloseModal = () => {
-    setShowModal(false);
-  };
-
-  const handleDeleteAndRestart = async () => {
-    if (selectedChatId) {
-      try {
-        await deleteAnalysis({ chatId: selectedChatId });
-        // Reset all state
-        setAnalysisStarted(false);
-        setAnalysisResult(null);
-        setAnalysisError(null);
-        setSelectedPrompt(null);
-        setIsAnalyzing(false);
-      } catch (error) {
-        console.error("Error deleting analysis:", error);
-        setAnalysisError("Failed to delete analysis");
-      }
+  // Fix: Initialize selectedPrompts when calculationSettings change
+  useEffect(() => {
+    if (calculationSettings?.modelNames) {
+      setSelectedPrompts(Array(calculationSettings.modelNames.length).fill(""));
     }
+  }, [calculationSettings]);
+
+  // Fix: Update handlePromptSelect to handle multiple prompts
+  const handlePromptSelect = (index: number, promptId: string) => {
+    const newSelectedPrompts = [...selectedPrompts];
+    newSelectedPrompts[index] = promptId;
+    setSelectedPrompts(newSelectedPrompts);
   };
 
-  const handlePromptSelect = async (
-    promptId: string,
-    promptContent: string
-  ) => {
-    setSelectedPrompt(promptId);
+  // Fix: New function to start analysis with selected prompts
+  const handleStartAnalysis = async () => {
+    if (!conversationHistory || !calculationSettings) return;
     setAnalysisStarted(true);
     setIsAnalyzing(true);
     setAnalysisError(null);
     setShowModal(false);
-
     try {
-      // Check if we have all required data
-      if (!conversationHistory || conversationHistory.length === 0) {
-        throw new Error("No conversation history found for this chat");
-      }
-
-      if (!calculationSettings) {
-        throw new Error(
-          "Calculation settings not configured. Please set up the model and temperature in calculation settings."
-        );
-      }
-
-      if (!calculationSettings.modelName) {
-        throw new Error("No model specified in calculation settings");
-      }
-
-      if (!apiSettings?.apiKey) {
-        throw new Error(
-          "OpenRouter API key not configured. Please set up your API key in settings."
-        );
-      }
-
-      // Get the prompt name for saving
-      const selectedPromptData = calculatePrompts.find(
-        (p) => p._id === promptId
-      );
-      const promptName = selectedPromptData?.name || "Unknown Prompt";
-
-      // Convert conversation history to OpenRouter format
-      const messages: OpenRouterMessage[] = [
-        {
-          role: "system",
-          content: promptContent,
-        },
-        ...conversationHistory.map(
-          (msg) =>
-            ({
-              role: msg.role === "ai" ? "assistant" : msg.role,
-              content: msg.content,
-            }) as OpenRouterMessage
-        ),
-      ];
-
-      // Send to OpenRouter with calculation settings
-      const result = await sendToOpenRouter(messages, {
-        model: calculationSettings.modelName,
-        temperature: calculationSettings.temperature,
+      const modelNames = calculationSettings.modelNames;
+      const messagesForModels = modelNames.map((modelName, index) => {
+        const promptId = selectedPrompts[index];
+        const prompt = allPrompts.find((p) => p._id === promptId);
+        return {
+          model: modelName,
+          temperature: calculationSettings.temperatures[index],
+          messages: [
+            { role: "system" as const, content: prompt?.content || "" },
+            ...conversationHistory.map((msg) => {
+              let role: "user" | "assistant" | "system";
+              if (msg.role === "ai") {
+                role = "assistant";
+              } else if (msg.role === "user") {
+                role = "user";
+              } else if (msg.role === "system") {
+                role = "system";
+              } else {
+                role = "user";
+              }
+              return {
+                role,
+                content: msg.content,
+              } as OpenRouterMessage;
+            }),
+          ],
+        };
       });
-
-      if (result) {
-        setAnalysisResult(result);
-
-        // Save analysis to database
-        if (selectedChatId) {
-          await saveAnalysis({
-            chatId: selectedChatId,
-            promptId: promptId,
-            promptName: promptName,
-            promptContent: promptContent,
-            modelName: calculationSettings.modelName,
-            temperature: calculationSettings.temperature,
-            result: result,
+      const results = await Promise.all(
+        messagesForModels.map(async (modelData) => {
+          return await sendToOpenRouter(modelData.messages, {
+            model: modelData.model,
+            temperature: modelData.temperature,
           });
-        }
-      } else {
-        throw new Error(
-          openRouterError || "Analysis failed - no response received"
+        })
+      );
+      setAnalysisResults(results);
+      if (selectedChatId) {
+        await Promise.all(
+          results.map(async (result, index) => {
+            const promptId = selectedPrompts[index];
+            const prompt = allPrompts.find((p) => p._id === promptId);
+            await saveAnalysis({
+              chatId: selectedChatId,
+              promptId,
+              promptName: prompt?.name || "Unknown Prompt",
+              promptContent: prompt?.content || "",
+              modelName: modelNames[index],
+              temperature: calculationSettings.temperatures[index],
+              result: result || "No response",
+            });
+          })
         );
       }
     } catch (error) {
@@ -238,9 +227,33 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
     return formattedLines.join("");
   };
 
+  const handleStartAnalysisClick = () => {
+    setShowModal(true);
+  };
+
+  const handleCloseModal = () => {
+    setShowModal(false);
+  };
+
+  const handleDeleteAndRestart = async () => {
+    if (selectedChatId) {
+      try {
+        await deleteAnalysis({ chatId: selectedChatId });
+        // Reset all state
+        setAnalysisStarted(false);
+        setAnalysisResults([]);
+        setAnalysisError(null);
+        setSelectedPrompts([]);
+        setIsAnalyzing(false);
+      } catch (error) {
+        console.error("Error deleting analysis:", error);
+        setAnalysisError("Failed to delete analysis");
+      }
+    }
+  };
+
   return (
     <div className="h-full flex flex-col">
-      {/* Always show header */}
       <div className="flex items-center justify-between border-b border-slate-200/60 p-6 flex-shrink-0 bg-white">
         <div className="flex items-center space-x-3">
           <div className="w-10 h-10 bg-slate-600 rounded-lg flex items-center justify-center">
@@ -255,293 +268,191 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                 ? "Analyze your conversation"
                 : "Select a chat to analyze"}
             </p>
-          </div>{" "}
+          </div>
         </div>
       </div>
-      {/* Conditional content based on selectedChatId and analysis state */}{" "}
+
       {!selectedChatId ? (
-        /* No chat selected - show blurred state */ <div className="flex-1 relative overflow-hidden transition-all duration-300 ease-in-out">
-          {/* Blurred background pattern - separate from content */}
+        <div className="flex-1 relative overflow-hidden transition-all duration-300 ease-in-out">
           <div className="absolute inset-0">
             <div className="w-full h-full bg-gradient-to-br from-slate-100 via-white to-slate-50 blur-lg transform scale-110"></div>
           </div>
-
-          {/* Clear content - completely isolated from background */}
           <div className="relative z-20 flex flex-col items-center justify-center h-full text-center p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
-            <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mb-6 mx-auto shadow-sm transform hover:scale-105 transition-all duration-200 ease-out">
-              <IconCalculator size={40} className="text-slate-500" />
-            </div>
-            <h3 className="text-xl font-semibold text-slate-800 mb-3 animate-in fade-in slide-in-from-bottom-2 duration-500 delay-150">
+            <h3 className="text-xl font-semibold text-slate-800 mb-3">
               No Chat Selected
             </h3>
-            <p className="text-slate-500 max-w-sm leading-relaxed animate-in fade-in slide-in-from-bottom-2 duration-500 delay-300">
+            <p className="text-slate-500 max-w-sm leading-relaxed">
               Click the arrow button on a chat to start analysis.
             </p>
           </div>
         </div>
       ) : !analysisStarted ? (
-        /* Chat selected but analysis not started - show blurred state */
         <>
           <div className="flex-1 relative overflow-hidden">
-            {/* Blurred background pattern - separate from content */}
             <div className="absolute inset-0">
               <div className="w-full h-full bg-gradient-to-br from-slate-100 via-white to-slate-50 blur-lg transform scale-110"></div>
             </div>
-
-            {/* Clear content - completely isolated from background */}
             <div className="relative z-20 flex flex-col items-center justify-center h-full text-center p-6">
-              <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mb-6 mx-auto shadow-sm">
-                <IconCalculator size={40} className="text-slate-500" />
-              </div>
               <h3 className="text-xl font-semibold text-slate-800 mb-3">
                 {selectedChat?.title || "Ready to Analyze"}
               </h3>
               <p className="text-slate-500 max-w-sm leading-relaxed">
-                {existingAnalysis
-                  ? "Previous analysis available. Start a new analysis or view existing results above."
-                  : "Start the analysis to calculate scores and get insights from this conversation."}
+                Start the analysis to calculate scores and get insights from
+                this conversation.
               </p>
             </div>
           </div>
-
-          {/* Start Analysis Button - only show when chat is selected */}
           <div className="border-t border-slate-200/60 p-6 flex-shrink-0 bg-white">
             <button
-              onClick={handleStartAnalysis}
-              className="w-full bg-slate-600 hover:bg-slate-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200 flex items-center justify-center space-x-2"
+              onClick={handleStartAnalysisClick}
+              className="w-full bg-slate-600 hover:bg-slate-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
             >
-              <IconCalculator size={20} />
-              <span>
-                {existingAnalysis ? "Start New Analysis" : "Start Analysis"}
-              </span>
+              Start Analysis
             </button>
           </div>
         </>
       ) : (
-        /* Analysis started - show results or loading state */
         <div className="flex-1 bg-white overflow-hidden">
-          {isAnalyzing || isGenerating /* Loading state */ ? (
+          {isAnalyzing || isGenerating ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6 animate-in fade-in duration-500">
-              <div className="w-20 h-20 bg-blue-100 rounded-2xl flex items-center justify-center mb-6 animate-pulse">
-                <IconCalculator
-                  size={40}
-                  className="text-blue-600 animate-spin"
-                />
-              </div>
-              <h3 className="text-xl font-semibold text-slate-800 mb-3 animate-in slide-in-from-bottom-2 duration-500 delay-150">
+              <h3 className="text-xl font-semibold text-slate-800 mb-3">
                 Analyzing: {selectedChat?.title}
               </h3>
-              <p className="text-slate-500 max-w-sm leading-relaxed mb-4 animate-in slide-in-from-bottom-2 duration-500 delay-300">
+              <p className="text-slate-500 max-w-sm leading-relaxed mb-4">
                 Analysis is in progress. Please wait while we calculate scores
                 and generate insights.
               </p>
               <div className="flex items-center space-x-2 text-blue-600 animate-in fade-in duration-500 delay-500">
                 <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-                <div
-                  className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.1s" }}
-                ></div>
-                <div
-                  className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"
-                  style={{ animationDelay: "0.2s" }}
-                ></div>
               </div>
             </div>
           ) : analysisError ? (
-            /* Error state */
             <div className="flex flex-col items-center justify-center h-full text-center p-6">
-              <div className="w-20 h-20 bg-red-100 rounded-2xl flex items-center justify-center mb-6">
-                <IconX size={40} className="text-red-600" />
-              </div>
               <h3 className="text-xl font-semibold text-slate-800 mb-3">
                 Analysis Failed
               </h3>
               <p className="text-red-500 max-w-md leading-relaxed mb-6">
                 {analysisError}
               </p>
-              <button
-                onClick={() => {
-                  setAnalysisStarted(false);
-                  setAnalysisError(null);
-                  setAnalysisResult(null);
-                }}
-                className="bg-slate-600 hover:bg-slate-700 text-white py-2 px-4 rounded-lg font-medium transition-colors"
-              >
-                Try Again
-              </button>
             </div>
-          ) : analysisResult /* Results state */ ? (
+          ) : analysisResults.length > 0 ? (
             <div className="h-full flex flex-col">
               <div className="flex items-center justify-between border-b border-slate-200/60 p-6 flex-shrink-0">
-                <div className="flex items-center space-x-3">
-                  <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
-                    <IconCheck size={20} className="text-white" />
-                  </div>
-                  <div>
-                    <h3 className="text-lg font-bold text-slate-800">
-                      Analysis Complete
-                    </h3>
-                    <p className="text-sm text-slate-500">
-                      {selectedChat?.title}
-                    </p>
-                    {existingAnalysis && (
-                      <p className="text-xs text-slate-400 mt-1">
-                        Analyzed with {existingAnalysis.promptName} •{" "}
-                        {existingAnalysis.modelName}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={handleDeleteAndRestart}
-                    className="flex items-center space-x-2 text-red-500 hover:text-red-700 hover:bg-red-50 px-3 py-2 rounded-lg transition-colors"
-                    title="Delete and start new analysis"
-                  >
-                    <IconTrash size={16} />
-                    <span className="text-sm font-medium">New Analysis</span>
-                  </button>
-                  <button
-                    onClick={() => {
-                      setAnalysisStarted(false);
-                      setAnalysisError(null);
-                      setAnalysisResult(null);
-                    }}
-                    className="text-slate-500 hover:text-slate-700 transition-colors"
-                  >
-                    <IconX size={20} />
-                  </button>
-                </div>
+                <h3 className="text-lg font-bold text-slate-800">
+                  Analysis Complete
+                </h3>
+                <button
+                  onClick={handleDeleteAndRestart}
+                  className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+                  title="Delete analysis and restart"
+                >
+                  <IconTrash size={16} /> Delete & Restart
+                </button>
               </div>
-
               <div className="flex-1 overflow-y-auto p-6">
-                <div className="max-w-none">
-                  <div className="bg-white rounded-lg border border-slate-200 shadow-sm">
-                    <div className="border-b border-slate-200 px-6 py-4">
-                      <h4 className="font-semibold text-slate-800 flex items-center space-x-2">
-                        <IconCalculator size={18} className="text-green-500" />
-                        <span>Analysis Results</span>
-                      </h4>
-                      {existingAnalysis && (
-                        <div className="mt-2 flex flex-wrap gap-4 text-xs text-slate-500">
-                          <span>Model: {existingAnalysis.modelName}</span>
-                          <span>
-                            Temperature: {existingAnalysis.temperature}
-                          </span>
-                          <span>
-                            Analyzed:{" "}
-                            {new Date(
-                              existingAnalysis.createdAt
-                            ).toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                {analysisResults.map((result, index) => (
+                  <div
+                    key={index}
+                    className="max-w-none bg-white rounded-lg border border-slate-200 shadow-sm mb-6"
+                  >
                     <div className="p-6">
+                      <div className="mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                        <span className="font-semibold text-slate-700">
+                          Model:{" "}
+                          {calculationSettings?.modelNames?.[index] ||
+                            `Model ${index + 1}`}
+                        </span>
+                        <span className="text-slate-500 text-sm mt-1 sm:mt-0">
+                          Prompt:{" "}
+                          {(() => {
+                            const promptId = selectedPrompts[0];
+                            const prompt = allPrompts.find(
+                              (p) => p._id === promptId
+                            );
+                            return prompt ? prompt.name : "Unknown Prompt";
+                          })()}
+                        </span>
+                      </div>
                       <div
                         className="prose prose-slate max-w-none"
                         dangerouslySetInnerHTML={{
-                          __html: formatAnalysisResult(analysisResult),
+                          __html: formatAnalysisResult(result),
                         }}
                       />
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
             </div>
           ) : (
-            /* Fallback state */
             <div className="flex flex-col items-center justify-center h-full text-center p-6">
-              <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mb-6">
-                <IconCalculator size={40} className="text-slate-500" />
-              </div>
               <h3 className="text-xl font-semibold text-slate-800 mb-3">
                 Ready to Analyze
               </h3>
               <p className="text-slate-500 max-w-sm leading-relaxed">
                 Something went wrong. Please try starting the analysis again.
               </p>
+              <button
+                onClick={handleStartAnalysisClick}
+                className="mt-6 bg-slate-600 hover:bg-slate-700 text-white py-2 px-6 rounded-lg font-medium transition-colors duration-200"
+              >
+                Start Analysis
+              </button>
             </div>
           )}
         </div>
-      )}{" "}
-      {/* Modal - only show when chat is selected and modal is open */}
-      {selectedChatId && showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center animate-in fade-in duration-200">
-          {/* Backdrop */}
-          <div
-            className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-200"
-            onClick={handleCloseModal}
-          />
+      )}
 
-          {/* Modal Content */}
-          <div className="relative bg-white rounded-2xl shadow-2xl max-w-md w-full mx-4 animate-in zoom-in-95 slide-in-from-bottom-4 duration-300">
-            {" "}
-            {/* Header */}
-            <div className="flex items-center justify-between p-6 border-b border-slate-200">
-              <h3 className="text-lg font-bold text-slate-800">
-                Select Calculation Prompt
-              </h3>
-              <button
-                onClick={handleCloseModal}
-                className="w-8 h-8 bg-slate-100 hover:bg-slate-200 rounded-full flex items-center justify-center transition-all duration-200 hover:scale-110 active:scale-95"
-              >
-                <IconX size={16} className="text-slate-600" />
-              </button>
-            </div>
-            {/* Prompts List */}
-            <div className="p-6">
-              {calculatePrompts.length === 0 ? (
-                <div className="text-center py-8">
-                  <div className="w-16 h-16 bg-slate-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <IconCalculator size={32} className="text-slate-400" />
-                  </div>
-                  <h4 className="text-lg font-medium text-slate-800 mb-2">
-                    No Calculation Prompts Found
+      {/* Modal for prompt selection */}
+      {showModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 relative">
+            <button
+              onClick={handleCloseModal}
+              className="absolute top-3 right-3"
+            >
+              <IconX size={20} />
+            </button>
+            <h3 className="text-lg font-bold text-slate-800 mb-4">
+              Select Prompts
+            </h3>
+
+            {/* Loop over the static model names and display corresponding prompts */}
+            {modelNames.map((modelName, index) => {
+              // Get the prompts for this model
+              const promptsForModel = modelPrompts[index] || [];
+
+              return (
+                <div key={modelName} className="mb-4">
+                  <h4 className="text-slate-700 font-medium">
+                    Model {index + 1}: {modelName}
                   </h4>
-                  <p className="text-slate-500 text-sm">
-                    Create calculation prompts in the prompts section to use for
-                    analysis.
-                  </p>
+
+                  {/* Display select dropdown for the current model */}
+                  <select
+                    value={selectedPrompts[index] || ""}
+                    onChange={(e) => handlePromptSelect(index, e.target.value)}
+                    className="w-full border p-2 rounded"
+                  >
+                    <option value="">Select a prompt</option>
+                    {promptsForModel.map((prompt) => (
+                      <option key={prompt._id} value={prompt._id}>
+                        {prompt.name}
+                      </option>
+                    ))}
+                  </select>
                 </div>
-              ) : (
-                <div className="space-y-3 max-h-64 overflow-y-auto">
-                  {calculatePrompts.map((prompt, index) => (
-                    <button
-                      key={prompt._id}
-                      onClick={() =>
-                        handlePromptSelect(prompt._id, prompt.content)
-                      }
-                      className={`w-full p-4 bg-slate-50 hover:bg-slate-100 rounded-lg border border-slate-200 hover:border-slate-300 transition-all duration-200 text-left hover:scale-[1.02] hover:shadow-md animate-in slide-in-from-left ${
-                        selectedPrompt === prompt._id
-                          ? "ring-2 ring-slate-400 border-slate-400"
-                          : ""
-                      }`}
-                      style={{ animationDelay: `${index * 50}ms` }}
-                    >
-                      <div className="flex items-start space-x-3">
-                        <div className="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center flex-shrink-0">
-                          <IconCalculator size={20} className="text-white" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <h4 className="font-medium text-slate-800 truncate">
-                            {prompt.name}
-                          </h4>
-                          <p className="text-sm text-slate-500 mt-1 line-clamp-2">
-                            {prompt.content.length > 100
-                              ? prompt.content.substring(0, 100) + "..."
-                              : prompt.content}
-                          </p>
-                          <div className="flex items-center mt-2 text-xs text-slate-400">
-                            <IconMessageCircle size={12} className="mr-1" />
-                            <span>Calculate Main Model</span>
-                          </div>
-                        </div>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+              );
+            })}
+
+            <div className="flex justify-end mt-4">
+              <button
+                onClick={handleStartAnalysis}
+                className="bg-slate-600 text-white py-2 px-4 rounded-lg"
+                disabled={selectedPrompts.some((p) => !p)} // Disable if any prompt is not selected
+              >
+                Start Analysis
+              </button>
             </div>
           </div>
         </div>

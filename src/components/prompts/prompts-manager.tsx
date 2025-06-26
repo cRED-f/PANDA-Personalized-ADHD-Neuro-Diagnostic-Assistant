@@ -22,7 +22,14 @@ interface PromptData {
   _id: Id<"prompts">;
   name: string;
   content: string;
-  targetModel?: "main" | "assistant" | "mentor" | "calculate-main-model";
+  targetModel?:
+    | "main"
+    | "assistant"
+    | "mentor"
+    | "calculate-1"
+    | "calculate-2"
+    | "calculate-3"
+    | "calculate-4";
   createdAt: number;
   updatedAt: number;
 }
@@ -35,6 +42,31 @@ interface PromptItemProps {
 
 const PromptItem: FC<PromptItemProps> = ({ prompt, onEdit, onDelete }) => {
   const [isExpanded, setIsExpanded] = useState(false);
+
+  // Get color based on the model
+  const getModelColor = (model: string | undefined) => {
+    switch (model) {
+      case "main":
+        return { background: "bg-blue-500", label: "Main Model" };
+      case "assistant":
+        return { background: "bg-purple-500", label: "Assistant" };
+      case "mentor":
+        return { background: "bg-orange-500", label: "Mentor" };
+      case "calculate-1":
+        return { background: "bg-green-500", label: "Calculation 1" };
+      case "calculate-2":
+        return { background: "bg-green-600", label: "Calculation 2" };
+      case "calculate-3":
+        return { background: "bg-green-700", label: "Calculation 3" };
+      case "calculate-4":
+        return { background: "bg-green-800", label: "Calculation 4" };
+      default:
+        return { background: "bg-gray-500", label: "Unknown" };
+    }
+  };
+
+  const { background, label } = getModelColor(prompt.targetModel);
+
   return (
     <motion.div
       className="p-3 rounded-xl backdrop-blur-md border border-white/30 bg-white/20 hover:bg-white/30 transition-all duration-300 shadow-lg hover:shadow-xl"
@@ -48,39 +80,18 @@ const PromptItem: FC<PromptItemProps> = ({ prompt, onEdit, onDelete }) => {
           className="flex-1 cursor-pointer"
           onClick={() => setIsExpanded(!isExpanded)}
         >
-          {" "}
           <div className="flex items-center space-x-2 mb-1">
-            {" "}
             <div
-              className={`w-2 h-2 rounded-full shadow-sm ${
-                (prompt.targetModel || "main") === "main"
-                  ? "bg-blue-500"
-                  : (prompt.targetModel || "main") === "assistant"
-                    ? "bg-purple-500"
-                    : (prompt.targetModel || "main") === "mentor"
-                      ? "bg-orange-500"
-                      : "bg-green-500"
-              }`}
+              className={`w-2 h-2 rounded-full shadow-sm ${background}`}
             ></div>
-            <h3 className="text-sm font-medium text-gray-800">{prompt.name}</h3>{" "}
+            <h3 className="text-sm font-medium text-gray-800">{prompt.name}</h3>
             <span
-              className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                (prompt.targetModel || "main") === "main"
-                  ? "bg-blue-100 text-blue-700 border border-blue-200"
-                  : (prompt.targetModel || "main") === "assistant"
-                    ? "bg-purple-100 text-purple-700 border border-purple-200"
-                    : (prompt.targetModel || "main") === "mentor"
-                      ? "bg-orange-100 text-orange-700 border border-orange-200"
-                      : "bg-green-100 text-green-700 border border-green-200"
-              }`}
+              className={`px-2 py-0.5 text-xs font-medium rounded-full ${background.replace(
+                "bg-",
+                "bg-opacity-10 text-"
+              )} border ${background.replace("bg-", "border-")}`}
             >
-              {(prompt.targetModel || "main") === "main"
-                ? "Main Model"
-                : (prompt.targetModel || "main") === "assistant"
-                  ? "Assistant"
-                  : (prompt.targetModel || "main") === "mentor"
-                    ? "Mentor"
-                    : "Calculate Main"}
+              {label}
             </span>
           </div>
           <AnimatePresence>
@@ -92,7 +103,6 @@ const PromptItem: FC<PromptItemProps> = ({ prompt, onEdit, onDelete }) => {
                 transition={{ duration: 0.2 }}
                 className="overflow-hidden"
               >
-                {" "}
                 <div className="mt-2 p-2 bg-white/40 backdrop-blur-sm rounded border border-white/30 shadow-inner">
                   <p className="text-xs text-gray-700 whitespace-pre-wrap">
                     {prompt.content}
@@ -101,7 +111,7 @@ const PromptItem: FC<PromptItemProps> = ({ prompt, onEdit, onDelete }) => {
               </motion.div>
             )}
           </AnimatePresence>
-        </div>{" "}
+        </div>
         <div className="flex items-center space-x-1 ml-2">
           <WithTooltip
             delayDuration={500}
@@ -148,7 +158,14 @@ interface PromptFormProps {
   onSave: (data: {
     name: string;
     content: string;
-    targetModel?: "main" | "assistant" | "mentor" | "calculate-main-model";
+    targetModel?:
+      | "main"
+      | "assistant"
+      | "mentor"
+      | "calculate-1"
+      | "calculate-2"
+      | "calculate-3"
+      | "calculate-4";
   }) => void;
   onCancel: () => void;
   isLoading: boolean;
@@ -163,7 +180,13 @@ const PromptForm: FC<PromptFormProps> = ({
   const [name, setName] = useState(prompt?.name || "");
   const [content, setContent] = useState(prompt?.content || "");
   const [targetModel, setTargetModel] = useState<
-    "main" | "assistant" | "mentor" | "calculate-main-model"
+    | "main"
+    | "assistant"
+    | "mentor"
+    | "calculate-1"
+    | "calculate-2"
+    | "calculate-3"
+    | "calculate-4"
   >(prompt?.targetModel || "main");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -185,7 +208,6 @@ const PromptForm: FC<PromptFormProps> = ({
       exit={{ opacity: 0, y: -20 }}
     >
       <form onSubmit={handleSubmit} className="space-y-4">
-        {" "}
         <div className="space-y-2">
           <Label htmlFor="prompt-name">Name</Label>
           <Input
@@ -196,67 +218,40 @@ const PromptForm: FC<PromptFormProps> = ({
             className="bg-white/50 backdrop-blur-sm"
             required
           />
-        </div>{" "}
+        </div>
         {/* Target Model Selection */}
         <div className="space-y-2">
           <Label>Target Model</Label>
           <div className="flex flex-wrap items-center gap-3">
-            <motion.button
-              type="button"
-              onClick={() => setTargetModel("main")}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm ${
-                targetModel === "main"
-                  ? "bg-blue-100 border-blue-300 text-blue-700"
-                  : "bg-white/50 border-gray-200 text-gray-600 hover:bg-white/70"
-              }`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-              <span className="font-medium">Main</span>
-            </motion.button>
-            <motion.button
-              type="button"
-              onClick={() => setTargetModel("assistant")}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm ${
-                targetModel === "assistant"
-                  ? "bg-purple-100 border-purple-300 text-purple-700"
-                  : "bg-white/50 border-gray-200 text-gray-600 hover:bg-white/70"
-              }`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-              <span className="font-medium">Assistant</span>
-            </motion.button>{" "}
-            <motion.button
-              type="button"
-              onClick={() => setTargetModel("mentor")}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm ${
-                targetModel === "mentor"
-                  ? "bg-orange-100 border-orange-300 text-orange-700"
-                  : "bg-white/50 border-gray-200 text-gray-600 hover:bg-white/70"
-              }`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="w-2 h-2 bg-orange-500 rounded-full"></div>
-              <span className="font-medium">Mentor</span>
-            </motion.button>
-            <motion.button
-              type="button"
-              onClick={() => setTargetModel("calculate-main-model")}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm ${
-                targetModel === "calculate-main-model"
-                  ? "bg-green-100 border-green-300 text-green-700"
-                  : "bg-white/50 border-gray-200 text-gray-600 hover:bg-white/70"
-              }`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-              <span className="font-medium">Calculate Main</span>
-            </motion.button>
+            {[
+              "main",
+              "assistant",
+              "mentor",
+              "calculate-1",
+              "calculate-2",
+              "calculate-3",
+              "calculate-4",
+            ].map((model) => (
+              <motion.button
+                key={model}
+                type="button"
+                onClick={() => setTargetModel(model as any)}
+                className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm ${
+                  targetModel === model
+                    ? `bg-${model === "main" ? "blue" : model === "assistant" ? "purple" : model === "mentor" ? "orange" : "green"}-100 border-${model === "main" ? "blue" : model === "assistant" ? "purple" : model === "mentor" ? "orange" : "green"}-300 text-${model === "main" ? "blue" : model === "assistant" ? "purple" : model === "mentor" ? "orange" : "green"}-700`
+                    : "bg-white/50 border-gray-200 text-gray-600 hover:bg-white/70"
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <div
+                  className={`w-2 h-2 ${model === "main" ? "bg-blue-500" : model === "assistant" ? "bg-purple-500" : model === "mentor" ? "bg-orange-500" : "bg-green-500"} rounded-full`}
+                ></div>
+                <span className="font-medium">
+                  {model.replace("-", " ").replace("calculate", "Calculation")}
+                </span>
+              </motion.button>
+            ))}
           </div>
         </div>
         <div className="space-y-2">
@@ -284,7 +279,7 @@ const PromptForm: FC<PromptFormProps> = ({
               <IconX size={16} className="mr-1" />
               Cancel
             </Button>
-          </motion.div>{" "}
+          </motion.div>
           <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
             <Button
               type="submit"
@@ -325,7 +320,14 @@ export const PromptsManager: FC = () => {
     async (data: {
       name: string;
       content: string;
-      targetModel?: "main" | "assistant" | "mentor" | "calculate-main-model";
+      targetModel?:
+        | "main"
+        | "assistant"
+        | "mentor"
+        | "calculate-1"
+        | "calculate-2"
+        | "calculate-3"
+        | "calculate-4";
     }) => {
       setIsLoading(true);
       try {
@@ -389,7 +391,6 @@ export const PromptsManager: FC = () => {
 
       {/* Form */}
       <AnimatePresence>
-        {" "}
         {showForm && (
           <motion.div
             className="p-4 rounded-xl backdrop-blur-lg border border-white/40 bg-white/25 shadow-xl"

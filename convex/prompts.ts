@@ -14,7 +14,10 @@ export const getPromptsByTarget = query({
       v.literal("main"),
       v.literal("assistant"),
       v.literal("mentor"),
-      v.literal("calculate-main-model")
+      v.literal("calculate-1"),
+      v.literal("calculate-2"),
+      v.literal("calculate-3"),
+      v.literal("calculate-4")
     ),
   },
   handler: async (ctx, args) => {
@@ -35,7 +38,10 @@ export const createPrompt = mutation({
         v.literal("main"),
         v.literal("assistant"),
         v.literal("mentor"),
-        v.literal("calculate-main-model")
+        v.literal("calculate-1"),
+        v.literal("calculate-2"),
+        v.literal("calculate-3"),
+        v.literal("calculate-4")
       )
     ),
   },
@@ -62,7 +68,10 @@ export const updatePrompt = mutation({
         v.literal("main"),
         v.literal("assistant"),
         v.literal("mentor"),
-        v.literal("calculate-main-model")
+        v.literal("calculate-1"),
+        v.literal("calculate-2"),
+        v.literal("calculate-3"),
+        v.literal("calculate-4")
       )
     ),
   },
