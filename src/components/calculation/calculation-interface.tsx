@@ -20,6 +20,9 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   const [analysisResults, setAnalysisResults] = useState<string[]>([]); // Store results for all models
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [highlightedExchanges, setHighlightedExchanges] = useState<Set<number>>(
+    new Set()
+  );
 
   // Get calculation settings (including model names)
   const calculationSettings = useQuery(
@@ -94,6 +97,35 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       setIsAnalyzing(false);
     }
   }, [selectedChatId, existingAnalysis]);
+  // Function to extract exchange numbers from analysis results
+  const extractExchangeNumbers = (result: string) => {
+    const exchangeNumbers = new Set<number>();
+    const exchangeRegex = /Exchange (\d+):/g;
+    let match;
+
+    while ((match = exchangeRegex.exec(result)) !== null) {
+      const exchangeNumber = parseInt(match[1], 10);
+      if (!isNaN(exchangeNumber)) {
+        exchangeNumbers.add(exchangeNumber);
+      }
+    }
+
+    return exchangeNumbers;
+  };
+
+  // Update highlighted exchanges when analysis results change
+  useEffect(() => {
+    if (analysisResults.length > 0) {
+      const newHighlights = new Set<number>();
+
+      analysisResults.forEach((result) => {
+        const exchanges = extractExchangeNumbers(result);
+        exchanges.forEach((exchange) => newHighlights.add(exchange));
+      });
+
+      setHighlightedExchanges(newHighlights);
+    }
+  }, [analysisResults]);
 
   // Fix: Initialize selectedPrompts when calculationSettings change
   useEffect(() => {
@@ -245,7 +277,13 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       }
     }
   };
-
+  const removeNotes = (content: string) => {
+    // Remove content inside parentheses and asterisks (bold formatting)
+    return content
+      .replace(/\(.*?\)/g, "")
+      .replace(/\*\*/g, "")
+      .trim();
+  };
   return (
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between border-b border-slate-200/60 p-6 flex-shrink-0 bg-white">
@@ -343,29 +381,88 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                   <IconTrash size={16} /> Delete & Restart
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto p-6">
-                {analysisResults.map((result, index) => (
-                  <div
-                    key={index}
-                    className="max-w-none bg-white rounded-lg border border-slate-200 shadow-sm mb-6"
-                  >
-                    <div className="p-6">
-                      <div className="mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                        <span className="font-semibold text-slate-700">
-                          Model:{" "}
-                          {calculationSettings?.modelNames?.[index] ||
-                            `Model ${index + 1}`}
-                        </span>
+              {/* Dual-panel layout */}
+              <div className="flex-1 flex overflow-hidden">
+                {/* Analysis Results Panel */}
+                <div className="flex-1 overflow-y-auto p-6 border-r border-slate-200">
+                  <h4 className="font-bold text-slate-800 mb-4">
+                    Analysis Results
+                  </h4>
+                  {analysisResults.map((result, index) => (
+                    <div
+                      key={index}
+                      className="max-w-none bg-white rounded-lg border border-slate-200 shadow-sm mb-6"
+                    >
+                      <div className="p-6">
+                        <div className="mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                          <span className="font-semibold text-slate-700">
+                            Model:{" "}
+                            {calculationSettings?.modelNames?.[index] ||
+                              `Model ${index + 1}`}
+                          </span>
+                        </div>
+                        <div
+                          className="prose prose-slate max-w-none"
+                          dangerouslySetInnerHTML={{
+                            __html: formatAnalysisResult(result),
+                          }}
+                        />
                       </div>
-                      <div
-                        className="prose prose-slate max-w-none"
-                        dangerouslySetInnerHTML={{
-                          __html: formatAnalysisResult(result),
-                        }}
-                      />
                     </div>
+                  ))}
+                </div>
+
+                {/* Conversation History Panel */}
+                <div className="w-1/3 overflow-y-auto p-6 bg-slate-50">
+                  <h4 className="font-bold text-slate-800 mb-4">
+                    Conversation History
+                  </h4>
+                  <div className="space-y-4">
+                    {conversationHistory?.map((msg, index) => {
+                      const exchangeNumber = index + 1;
+                      const isHighlighted =
+                        highlightedExchanges.has(exchangeNumber);
+
+                      return (
+                        <div
+                          key={index}
+                          className={`p-4 rounded-lg border ${
+                            isHighlighted
+                              ? "border-yellow-500 bg-yellow-50 shadow-sm"
+                              : "border-slate-200 bg-white"
+                          }`}
+                        >
+                          <div className="flex items-start">
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
+                                msg.role === "ai"
+                                  ? "bg-blue-500"
+                                  : "bg-green-500"
+                              }`}
+                            >
+                              <span className="text-white font-bold text-sm">
+                                {msg.role === "ai" ? "P" : "U"}
+                              </span>
+                            </div>
+                            <div className="flex-1">
+                              <div className="flex justify-between items-start">
+                                <span className="font-semibold text-slate-700">
+                                  {msg.role === "ai" ? "Psychiatrist" : "User"}
+                                </span>
+                                <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
+                                  Exchange {exchangeNumber}
+                                </span>
+                              </div>
+                              <p className="mt-1 text-slate-700 whitespace-pre-wrap">
+                                {removeNotes(msg.content)}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
                   </div>
-                ))}
+                </div>
               </div>
             </div>
           ) : (
