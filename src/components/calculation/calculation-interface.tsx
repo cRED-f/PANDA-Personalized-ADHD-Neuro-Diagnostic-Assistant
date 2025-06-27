@@ -3,13 +3,7 @@
 import { FC, useState, useEffect } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import {
-  IconCalculator,
-  IconX,
-  IconMessageCircle,
-  IconCheck,
-  IconTrash,
-} from "@tabler/icons-react";
+import { IconCalculator, IconX, IconTrash } from "@tabler/icons-react";
 import { useOpenRouter } from "@/hooks/useOpenRouter";
 import { OpenRouterMessage } from "@/lib/openrouter";
 
@@ -361,16 +355,6 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                           Model:{" "}
                           {calculationSettings?.modelNames?.[index] ||
                             `Model ${index + 1}`}
-                        </span>
-                        <span className="text-slate-500 text-sm mt-1 sm:mt-0">
-                          Prompt:{" "}
-                          {(() => {
-                            const promptId = selectedPrompts[0];
-                            const prompt = allPrompts.find(
-                              (p) => p._id === promptId
-                            );
-                            return prompt ? prompt.name : "Unknown Prompt";
-                          })()}
                         </span>
                       </div>
                       <div
