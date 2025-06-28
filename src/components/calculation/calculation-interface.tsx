@@ -620,6 +620,11 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
               .replace(/\[.*?\]/g, "")
               .replace(/\*\(.*?\)\*/g, "")
               .replace(/\(.*?\)/g, "")
+              .replace(/---[\s\S]*?\*\*Reminder\*\*[\s\S]*$/gm, "")
+              .replace(/\*\*Reminder\*\*[\s\S]*$/gm, "")
+              .replace(/\*\(.*?\)\*[\s\S]*$/gm, "")
+              .replace(/---[\s\S]*Progress:[\s\S]*$/gm, "")
+              .replace(/---[\s\S]*$/gm, "")
               .trim();
 
             const fullExchange = `**Exchange ${realExchangeNumber}:**
@@ -863,6 +868,26 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                                   __html: (() => {
                                     // Process bold text FIRST, before removing any notes
                                     let processedContent = msg.content;
+
+                                    // For AI messages, remove everything after the main question
+                                    if (msg.role === "ai") {
+                                      // Remove progress tracking and reminder sections
+                                      processedContent = processedContent
+                                        .replace(
+                                          /---[\s\S]*Progress:[\s\S]*$/gm,
+                                          ""
+                                        )
+                                        .replace(
+                                          /---[\s\S]*?\*\*Reminder\*\*[\s\S]*$/gm,
+                                          ""
+                                        )
+                                        .replace(
+                                          /\*\*Reminder\*\*[\s\S]*$/gm,
+                                          ""
+                                        )
+                                        .replace(/---[\s\S]*$/gm, "")
+                                        .trim();
+                                    }
 
                                     processedContent = processedContent.replace(
                                       /\*\*([^*]+)\*\*/g,
