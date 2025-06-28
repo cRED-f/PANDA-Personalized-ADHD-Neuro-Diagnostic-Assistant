@@ -77,10 +77,14 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
     },
   };
   const removeNotes = (content: string) => {
-    // Remove content inside parentheses and asterisks (bold formatting)
+    // Remove content inside parentheses, asterisks (bold formatting), and reminder sections
     return content
       .replace(/\(.*?\)/g, "")
       .replace(/\*\*/g, "")
+      .replace(/---[\s\S]*?\*\*Reminder\*\*[\s\S]*$/gm, "")
+      .replace(/\*\*Reminder\*\*[\s\S]*$/gm, "")
+      .replace(/\*\(.*?\)\*[\s\S]*$/gm, "")
+      .replace(/---[\s\S]*$/gm, "")
       .trim();
   };
   return (
