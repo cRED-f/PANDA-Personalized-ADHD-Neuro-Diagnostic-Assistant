@@ -39,7 +39,8 @@ export default defineSchema({
         v.literal("calculate-1"),
         v.literal("calculate-2"),
         v.literal("calculate-3"),
-        v.literal("calculate-4")
+        v.literal("calculate-4"),
+        v.literal("single-model")
       )
     ),
     createdAt: v.number(),
@@ -68,6 +69,8 @@ export default defineSchema({
   calculationSettings: defineTable({
     modelNames: v.array(v.string()),
     temperatures: v.array(v.number()),
+    singleModelName: v.optional(v.string()),
+    singleModelTemperature: v.optional(v.number()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }),

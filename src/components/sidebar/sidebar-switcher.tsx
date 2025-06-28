@@ -10,6 +10,7 @@ import {
   IconSettings,
   IconCalculator,
   IconAdjustments,
+  IconDownload,
 } from "@tabler/icons-react";
 import { FC } from "react";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -69,6 +70,12 @@ export const SidebarSwitcher: FC<SidebarSwitcherProps> = ({
           contentType="calculation-settings"
           onContentTypeChange={onContentTypeChange}
           tooltip="Calculation Settings"
+        />
+        <SidebarSwitchItem
+          icon={<IconDownload size={20} />}
+          contentType="import-export"
+          onContentTypeChange={onContentTypeChange}
+          tooltip="Import/Export"
         />
         <SidebarSwitchItem
           icon={<IconSettings size={20} />}

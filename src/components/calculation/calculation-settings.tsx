@@ -25,6 +25,12 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
 
   const [temperatures, setTemperatures] = useState([0.7, 0.7, 0.7, 0.7]);
 
+  // Single model state
+  const [singleModelName, setSingleModelName] = useState(
+    "anthropic/claude-3.5-sonnet"
+  );
+  const [singleModelTemperature, setSingleModelTemperature] = useState(0.7);
+
   // Query to get calculation settings from database
   const calculationSettings = useQuery(
     api.calculationSettings.getCalculationSettings
@@ -38,10 +44,18 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
   // Load settings from database when component mounts or settings change
   useEffect(() => {
     if (calculationSettings) {
-      const { modelNames: savedModelNames, temperatures: savedTemperatures } =
-        calculationSettings;
-      setModelNames(savedModelNames || modelNames);
-      setTemperatures(savedTemperatures || temperatures);
+      const {
+        modelNames: savedModelNames,
+        temperatures: savedTemperatures,
+        singleModelName: savedSingleModelName,
+        singleModelTemperature: savedSingleModelTemperature,
+      } = calculationSettings;
+
+      if (savedModelNames) setModelNames(savedModelNames);
+      if (savedTemperatures) setTemperatures(savedTemperatures);
+      if (savedSingleModelName) setSingleModelName(savedSingleModelName);
+      if (savedSingleModelTemperature !== undefined)
+        setSingleModelTemperature(savedSingleModelTemperature);
     }
   }, [calculationSettings]);
 
@@ -54,6 +68,8 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
       await saveCalculationSettings({
         modelNames,
         temperatures,
+        singleModelName,
+        singleModelTemperature,
       });
       setIsEditing(false);
       console.log("Settings saved successfully");
@@ -69,6 +85,9 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
       </h2>
 
       <div className="space-y-4">
+        <h3 className="text-md font-medium text-gray-800 border-b pb-2 mb-4">
+          Multi-Model Settings
+        </h3>
         {modelNames.map((modelName, index) => (
           <div key={index}>
             <Label htmlFor={`model-name-${index}`}>
@@ -105,6 +124,39 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
             />
           </div>
         ))}
+
+        <h3 className="text-md font-medium text-gray-800 border-b pb-2 mb-4 mt-8">
+          Single Model Settings
+        </h3>
+        <div>
+          <Label htmlFor="single-model-name">Single Model Name</Label>
+          <Input
+            id="single-model-name"
+            value={singleModelName}
+            onChange={(e) => setSingleModelName(e.target.value)}
+            disabled={!isEditing}
+            className="mt-1"
+            placeholder="e.g., anthropic/claude-3.5-sonnet"
+          />
+        </div>
+        <div>
+          <Label htmlFor="single-model-temperature">
+            Single Model Temperature
+          </Label>
+          <Input
+            id="single-model-temperature"
+            type="number"
+            min="0"
+            max="2"
+            step="0.1"
+            value={singleModelTemperature}
+            onChange={(e) =>
+              setSingleModelTemperature(parseFloat(e.target.value))
+            }
+            disabled={!isEditing}
+            className="mt-1"
+          />
+        </div>
 
         <div className="pt-4">
           {!isEditing ? (

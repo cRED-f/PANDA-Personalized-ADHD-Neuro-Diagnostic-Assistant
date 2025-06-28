@@ -14,6 +14,8 @@ export const saveCalculationSettings = mutation({
   args: {
     modelNames: v.array(v.string()), // Accept an array of model names
     temperatures: v.array(v.number()), // Accept an array of temperatures
+    singleModelName: v.optional(v.string()), // Single model name
+    singleModelTemperature: v.optional(v.number()), // Single model temperature
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -26,6 +28,8 @@ export const saveCalculationSettings = mutation({
       await ctx.db.patch(existingSettings._id, {
         modelNames: args.modelNames,
         temperatures: args.temperatures,
+        singleModelName: args.singleModelName,
+        singleModelTemperature: args.singleModelTemperature,
         updatedAt: now,
       });
       return existingSettings._id;
@@ -34,6 +38,8 @@ export const saveCalculationSettings = mutation({
       const settingsId = await ctx.db.insert("calculationSettings", {
         modelNames: args.modelNames,
         temperatures: args.temperatures,
+        singleModelName: args.singleModelName,
+        singleModelTemperature: args.singleModelTemperature,
         createdAt: now,
         updatedAt: now,
       });

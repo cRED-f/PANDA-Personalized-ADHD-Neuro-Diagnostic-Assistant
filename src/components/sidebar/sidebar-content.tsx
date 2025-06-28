@@ -15,6 +15,7 @@ import { AssistantsManager } from "../assistants/assistants-manager";
 import { MentorsManager } from "../mentors/mentors-manager";
 import CalculationSettings from "../calculation/calculation-settings";
 import CalculateScore from "../calculation/calculate-score";
+import { ImportExportManager } from "../import-export/import-export-manager";
 import { motion } from "framer-motion";
 
 interface SidebarContentProps {
@@ -256,6 +257,13 @@ export const SidebarContent: FC<SidebarContentProps> = ({
           <CalculationSettings onToggleSidebar={onToggleSidebar} />
         </div>
       );
+    } // Special handling for import-export
+    if (contentType === "import-export") {
+      return (
+        <div className="h-full">
+          <ImportExportManager onToggleSidebar={onToggleSidebar} />
+        </div>
+      );
     } // Special handling for calculate score
     if (contentType === "calculate-score") {
       return (
@@ -355,6 +363,8 @@ export const SidebarContent: FC<SidebarContentProps> = ({
       return renderSidebarContent("settings", [], []);
     case "calculation-settings":
       return renderSidebarContent("calculation-settings", [], []);
+    case "import-export":
+      return renderSidebarContent("import-export", [], []);
     case "calculate-score":
       return renderSidebarContent("calculate-score", [], []);
     default:

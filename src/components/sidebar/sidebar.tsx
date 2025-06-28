@@ -116,6 +116,12 @@ export const Sidebar: FC<SidebarProps> = ({
                     onToggleSidebar={onToggleSidebar}
                   />
                 </TabsContent>
+                <TabsContent value="import-export" className="h-full p-0">
+                  <SidebarContent
+                    contentType="import-export"
+                    onToggleSidebar={onToggleSidebar}
+                  />
+                </TabsContent>
               </motion.div>
             </motion.div>
           )}

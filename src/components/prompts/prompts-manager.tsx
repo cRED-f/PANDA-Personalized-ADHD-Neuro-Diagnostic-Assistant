@@ -29,7 +29,8 @@ interface PromptData {
     | "calculate-1"
     | "calculate-2"
     | "calculate-3"
-    | "calculate-4";
+    | "calculate-4"
+    | "single-model";
   createdAt: number;
   updatedAt: number;
 }
@@ -60,6 +61,8 @@ const PromptItem: FC<PromptItemProps> = ({ prompt, onEdit, onDelete }) => {
         return { background: "bg-green-700", label: "Calculation 3" };
       case "calculate-4":
         return { background: "bg-green-800", label: "Calculation 4" };
+      case "single-model":
+        return { background: "bg-indigo-500", label: "Single Model" };
       default:
         return { background: "bg-gray-500", label: "Unknown" };
     }
@@ -165,7 +168,8 @@ interface PromptFormProps {
       | "calculate-1"
       | "calculate-2"
       | "calculate-3"
-      | "calculate-4";
+      | "calculate-4"
+      | "single-model";
   }) => void;
   onCancel: () => void;
   isLoading: boolean;
@@ -187,6 +191,7 @@ const PromptForm: FC<PromptFormProps> = ({
     | "calculate-2"
     | "calculate-3"
     | "calculate-4"
+    | "single-model"
   >(prompt?.targetModel || "main");
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -231,14 +236,15 @@ const PromptForm: FC<PromptFormProps> = ({
               "calculate-2",
               "calculate-3",
               "calculate-4",
+              "single-model",
             ].map((model) => (
               <motion.button
                 key={model}
                 type="button"
-                onClick={() => setTargetModel(model as any)}
+                onClick={() => setTargetModel(model as typeof targetModel)}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm ${
                   targetModel === model
-                    ? `bg-${model === "main" ? "blue" : model === "assistant" ? "purple" : model === "mentor" ? "orange" : "green"}-100 border-${model === "main" ? "blue" : model === "assistant" ? "purple" : model === "mentor" ? "orange" : "green"}-300 text-${model === "main" ? "blue" : model === "assistant" ? "purple" : model === "mentor" ? "orange" : "green"}-700`
+                    ? `bg-${model === "main" ? "blue" : model === "assistant" ? "purple" : model === "mentor" ? "orange" : model === "single-model" ? "indigo" : "green"}-100 border-${model === "main" ? "blue" : model === "assistant" ? "purple" : model === "mentor" ? "orange" : model === "single-model" ? "indigo" : "green"}-300 text-${model === "main" ? "blue" : model === "assistant" ? "purple" : model === "mentor" ? "orange" : model === "single-model" ? "indigo" : "green"}-700`
                     : "bg-white/50 border-gray-200 text-gray-600 hover:bg-white/70"
                 }`}
                 whileHover={{ scale: 1.02 }}
@@ -327,7 +333,8 @@ export const PromptsManager: FC = () => {
         | "calculate-1"
         | "calculate-2"
         | "calculate-3"
-        | "calculate-4";
+        | "calculate-4"
+        | "single-model";
     }) => {
       setIsLoading(true);
       try {
