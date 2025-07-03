@@ -6,6 +6,10 @@ import { api } from "../../../convex/_generated/api";
 import { IconCalculator, IconX, IconTrash } from "@tabler/icons-react";
 import { useOpenRouter } from "@/hooks/useOpenRouter";
 import { OpenRouterMessage } from "@/lib/openrouter";
+import {
+  filterAIMessageForDatabase,
+  filterAIMessageForCalculation,
+} from "@/lib/utils";
 
 interface CalculationInterfaceProps {
   selectedChatId?: string | null;
@@ -20,15 +24,11 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   const [analysisResults, setAnalysisResults] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
-  const [highlightedExchanges, setHighlightedExchanges] = useState<Set<number>>(
-    new Set()
-  );
 
   const [singleModelMode, setSingleModelMode] = useState(false);
   const [selectedSinglePrompt, setSelectedSinglePrompt] = useState<string>("");
   const [singleModelResult, setSingleModelResult] = useState<string>("");
-  const [filteredHistoryForDisplay, setFilteredHistoryForDisplay] =
-    useState<typeof conversationHistory>(undefined);
+  const [makeTextMode, setMakeTextMode] = useState(false);
 
   const calculationSettings = useQuery(
     api.calculationSettings.getCalculationSettings
@@ -80,18 +80,28 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
     selectedChatId ? { chatId: selectedChatId } : "skip"
   );
 
-  const apiSettings = useQuery(api.settings.getApiSettings);
-
   const existingAnalysis = useQuery(
     api.analyses.getChatAnalysis,
     selectedChatId ? { chatId: selectedChatId } : "skip"
+  );
+
+  // Make Text Analysis queries and mutations
+  const existingMakeTextAnalysis = useQuery(
+    api.messages.getMakeTextAnalysis,
+    selectedChatId ? { chatId: selectedChatId } : "skip"
+  );
+
+  const saveMakeTextAnalysis = useMutation(api.messages.saveMakeTextAnalysis);
+  const saveCombinedText = useMutation(api.messages.saveCombinedText);
+  const deleteMakeTextAnalysis = useMutation(
+    api.messages.deleteMakeTextAnalysis
   );
 
   const saveAnalysis = useMutation(api.analyses.saveAnalysis);
   const deleteAnalysis = useMutation(api.analyses.deleteAnalysis);
 
   const { sendMessage: sendToOpenRouter, isGenerating } = useOpenRouter(
-    apiSettings?.apiKey
+    calculationSettings?.calculationApiKey
   );
 
   const generateFilteredHistory = useCallback(
@@ -123,50 +133,33 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       setSelectedPrompts(existingAnalysis.map((a) => a.promptId));
       setIsAnalyzing(false);
       setAnalysisError(null);
-      setFilteredHistoryForDisplay(
-        generateFilteredHistory(conversationHistory)
+    } else if (existingMakeTextAnalysis) {
+      // Handle Make Text Analysis
+      setMakeTextMode(true);
+      setAnalysisStarted(true);
+      setAnalysisResults(
+        existingMakeTextAnalysis.analysisResults.map((a) => a.result)
       );
+      setSelectedPrompts(
+        existingMakeTextAnalysis.analysisResults.map((a) => a.promptId)
+      );
+      setIsAnalyzing(false);
+      setAnalysisError(null);
     } else {
       setAnalysisStarted(false);
       setAnalysisResults([]);
       setAnalysisError(null);
       setSelectedPrompts([]);
       setIsAnalyzing(false);
-      setFilteredHistoryForDisplay(undefined);
+      setMakeTextMode(false);
     }
   }, [
     selectedChatId,
     existingAnalysis,
+    existingMakeTextAnalysis,
     conversationHistory,
     generateFilteredHistory,
   ]);
-  const extractExchangeNumbers = (result: string) => {
-    const exchangeNumbers = new Set<number>();
-    const exchangeRegex = /\*\*Exchange (\d+):\*\*/g;
-    let match;
-
-    while ((match = exchangeRegex.exec(result)) !== null) {
-      const exchangeNumber = parseInt(match[1], 10);
-      if (!isNaN(exchangeNumber)) {
-        exchangeNumbers.add(exchangeNumber);
-      }
-    }
-
-    return exchangeNumbers;
-  };
-
-  useEffect(() => {
-    if (analysisResults.length > 0) {
-      const newHighlights = new Set<number>();
-
-      analysisResults.forEach((result) => {
-        const exchanges = extractExchangeNumbers(result);
-        exchanges.forEach((exchange) => newHighlights.add(exchange));
-      });
-
-      setHighlightedExchanges(newHighlights);
-    }
-  }, [analysisResults]);
 
   useEffect(() => {
     if (calculationSettings?.modelNames) {
@@ -178,6 +171,209 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
     const newSelectedPrompts = [...selectedPrompts];
     newSelectedPrompts[index] = promptId;
     setSelectedPrompts(newSelectedPrompts);
+  };
+
+  // Function to create combined text from conversation with exchange numbers
+  const createMakeText = useCallback(() => {
+    if (!conversationHistory) return "";
+
+    // Apply the same filtering logic as other analysis modes
+    const filteredHistory = generateFilteredHistory(conversationHistory);
+    if (!filteredHistory) return "";
+
+    let userCount = 0;
+    let aiCount = 0;
+
+    const combinedText = filteredHistory
+      .map((msg) => {
+        let exchangeNumber = "";
+        let role = "";
+
+        if (msg.role === "user") {
+          userCount++;
+          exchangeNumber = `Exchange ${userCount}`;
+          role = "user";
+        } else if (msg.role === "ai") {
+          aiCount++;
+          exchangeNumber = `Exchange ${aiCount}`;
+          role = "assistant";
+        } else {
+          // Handle other roles (mentor, assistant, system)
+          role =
+            msg.role === "assistant"
+              ? "assistant"
+              : msg.role === "mentor"
+                ? "mentor"
+                : msg.role === "system"
+                  ? "system"
+                  : "assistant";
+        }
+
+        // Filter out tracking info from AI messages
+        const cleanContent =
+          msg.role === "ai"
+            ? filterAIMessageForCalculation(msg.content)
+            : msg.content;
+
+        return exchangeNumber
+          ? `${exchangeNumber} ${role}: ${cleanContent}`
+          : `${role}: ${cleanContent}`;
+      })
+      .join("\n\n");
+
+    return combinedText;
+  }, [conversationHistory, generateFilteredHistory]);
+
+  // Handle Make Text button click - create and save combined text first
+  const handleMakeTextClick = async () => {
+    if (!conversationHistory || !selectedChatId) return;
+
+    try {
+      setIsAnalyzing(true);
+
+      // Create the combined text
+      const makeText = createMakeText();
+
+      console.log("📝 Creating and saving combined text:", {
+        textLength: makeText.length,
+        textPreview:
+          makeText.substring(0, 500) + (makeText.length > 500 ? "..." : ""),
+      });
+
+      // Save combined text to database first
+      await saveCombinedText({
+        chatId: selectedChatId,
+        combinedText: makeText,
+      });
+
+      console.log("✅ Combined text saved successfully");
+
+      // Now show the modal for prompt selection
+      setShowModal(true);
+      setMakeTextMode(true);
+    } catch (error) {
+      console.error("Error creating/saving combined text:", error);
+      setAnalysisError(
+        error instanceof Error
+          ? `Failed to create combined text: ${error.message}`
+          : "Failed to create combined text"
+      );
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleMakeTextAnalysis = async () => {
+    if (!conversationHistory || !calculationSettings || !selectedChatId) return;
+
+    setMakeTextMode(true);
+    setAnalysisStarted(true);
+    setIsAnalyzing(true);
+    setAnalysisError(null);
+    setShowModal(false);
+
+    try {
+      // Get the combined text from the database (not from memory)
+      const makeTextData = existingMakeTextAnalysis;
+      if (!makeTextData || !makeTextData.combinedText) {
+        throw new Error(
+          "No combined text found in database. Please create combined text first."
+        );
+      }
+
+      const makeText = makeTextData.combinedText;
+
+      // Console log the make text data
+      console.log("📝 Make Text Analysis - Using saved combined text:", {
+        textLength: makeText.length,
+        textPreview:
+          makeText.substring(0, 500) + (makeText.length > 500 ? "..." : ""),
+        selectedPrompts: selectedPrompts.length,
+        prompts: selectedPrompts.map((promptId) => {
+          const prompt = allPrompts.find((p) => p._id === promptId);
+          return {
+            id: promptId,
+            name: prompt?.name || "Unknown",
+          };
+        }),
+      });
+
+      const modelNames = calculationSettings.modelNames;
+      const results: string[] = [];
+      const analysisResults: Array<{
+        modelName: string;
+        promptId: string;
+        promptName: string;
+        promptContent: string;
+        temperature: number;
+        result: string;
+      }> = [];
+
+      // Send make text with each selected prompt to each model
+      for (let index = 0; index < selectedPrompts.length; index++) {
+        const promptId = selectedPrompts[index];
+        const prompt = allPrompts.find((p) => p._id === promptId);
+
+        if (!prompt || !promptId) continue;
+
+        const messages = [
+          { role: "system" as const, content: prompt.content },
+          { role: "user" as const, content: makeText },
+        ];
+
+        console.log(`📤 Sending to model ${modelNames[index]}:`, {
+          promptName: prompt.name,
+          systemPromptLength: prompt.content.length,
+          userTextLength: makeText.length,
+        });
+
+        const result = await sendToOpenRouter(messages, {
+          model: modelNames[index],
+          temperature: calculationSettings.temperatures[index],
+        });
+
+        if (result) {
+          results.push(result);
+
+          // Store for make text analysis database save
+          analysisResults.push({
+            modelName: modelNames[index],
+            promptId,
+            promptName: prompt.name,
+            promptContent: prompt.content,
+            temperature: calculationSettings.temperatures[index],
+            result: result,
+          });
+
+          // Save analysis with make text mode flag (for compatibility)
+          await saveAnalysis({
+            chatId: selectedChatId,
+            promptId,
+            promptName: prompt.name,
+            promptContent: prompt.content,
+            modelName: modelNames[index],
+            temperature: calculationSettings.temperatures[index],
+            result: result, // Save full result for make text mode
+          });
+        }
+      }
+
+      // Update the Make Text Analysis in the database with results
+      await saveMakeTextAnalysis({
+        chatId: selectedChatId,
+        combinedText: makeText,
+        analysisResults: analysisResults,
+      });
+
+      setAnalysisResults(results);
+    } catch (error) {
+      console.error("Make text analysis error:", error);
+      setAnalysisError(
+        error instanceof Error ? error.message : "Make text analysis failed"
+      );
+    } finally {
+      setIsAnalyzing(false);
+    }
   };
 
   const handleSingleModelAnalysis = async () => {
@@ -252,10 +448,16 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
 
           const exchangeNumber = Math.floor(filteredIndex / 2) + 1;
 
+          // Filter AI content to remove tracking info before sending to analysis models
+          const cleanContent =
+            role === "assistant"
+              ? filterAIMessageForCalculation(msg.content)
+              : msg.content;
+
           const contentWithExchange =
             role === "assistant"
-              ? `[Exchange ${exchangeNumber} - Psychiatrist]: ${msg.content}`
-              : `[Exchange ${exchangeNumber} - User]: ${msg.content}`;
+              ? `[Exchange ${exchangeNumber} - Psychiatrist]: ${cleanContent}`
+              : `[Exchange ${exchangeNumber} - User]: ${cleanContent}`;
 
           return {
             role,
@@ -272,7 +474,6 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
 
       if (result) {
         setSingleModelResult(result);
-        setFilteredHistoryForDisplay(filteredHistory);
 
         if (selectedChatId) {
           await saveAnalysis({
@@ -282,7 +483,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
             promptContent: prompt?.content || "",
             modelName: calculationSettings.singleModelName || "single-model",
             temperature: calculationSettings.singleModelTemperature || 0.7,
-            result: result,
+            result: filterAIMessageForDatabase(result),
           });
         }
       }
@@ -372,11 +573,17 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
               // Each exchange consists of 2 messages (psychiatrist + user)
               const exchangeNumber = Math.floor(filteredIndex / 2) + 1;
 
+              // Filter AI content to remove tracking info before sending to analysis models
+              const cleanContent =
+                role === "assistant"
+                  ? filterAIMessageForCalculation(msg.content)
+                  : msg.content;
+
               // Include the exchange number in the message content
               const contentWithExchange =
                 role === "assistant"
-                  ? `[Exchange ${exchangeNumber} - Psychiatrist]: ${msg.content}`
-                  : `[Exchange ${exchangeNumber} - User]: ${msg.content}`;
+                  ? `[Exchange ${exchangeNumber} - Psychiatrist]: ${cleanContent}`
+                  : `[Exchange ${exchangeNumber} - User]: ${cleanContent}`;
 
               return {
                 role,
@@ -399,7 +606,6 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       setAnalysisResults(
         results.filter((result): result is string => result !== null)
       );
-      setFilteredHistoryForDisplay(filteredHistory); // Store filtered history for display
       if (selectedChatId) {
         await Promise.all(
           results.map(async (result, index) => {
@@ -412,7 +618,9 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
               promptContent: prompt?.content || "",
               modelName: modelNames[index],
               temperature: calculationSettings.temperatures[index],
-              result: result || "No response",
+              result: result
+                ? filterAIMessageForDatabase(result)
+                : "No response",
             });
           })
         );
@@ -535,12 +743,14 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   const handleCloseModal = () => {
     setShowModal(false);
     setSingleModelMode(false);
+    setMakeTextMode(false);
   };
 
   const handleDeleteAndRestart = async () => {
     if (selectedChatId) {
       try {
         await deleteAnalysis({ chatId: selectedChatId });
+        await deleteMakeTextAnalysis({ chatId: selectedChatId });
         // Reset all state
         setAnalysisStarted(false);
         setAnalysisResults([]);
@@ -551,6 +761,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
         setSingleModelMode(false);
         setSelectedSinglePrompt("");
         setSingleModelResult("");
+        setMakeTextMode(false);
       } catch (error) {
         console.error("Error deleting analysis:", error);
         setAnalysisError("Failed to delete analysis");
@@ -620,11 +831,6 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
               .replace(/\[.*?\]/g, "")
               .replace(/\*\(.*?\)\*/g, "")
               .replace(/\(.*?\)/g, "")
-              .replace(/---[\s\S]*?\*\*Reminder\*\*[\s\S]*$/gm, "")
-              .replace(/\*\*Reminder\*\*[\s\S]*$/gm, "")
-              .replace(/\*\(.*?\)\*[\s\S]*$/gm, "")
-              .replace(/---[\s\S]*Progress:[\s\S]*$/gm, "")
-              .replace(/---[\s\S]*$/gm, "")
               .trim();
 
             const fullExchange = `**Exchange ${realExchangeNumber}:**
@@ -719,6 +925,12 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
               >
                 Start Single Model Analysis
               </button>
+              <button
+                onClick={handleMakeTextClick}
+                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
+              >
+                Make Text Analysis
+              </button>
             </div>
           </div>
         </>
@@ -752,7 +964,9 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                 <h3 className="text-lg font-bold text-slate-800">
                   {singleModelMode
                     ? "Single Model Analysis Complete"
-                    : "Multi-Model Analysis Complete"}
+                    : makeTextMode
+                      ? "Make Text Analysis Complete"
+                      : "Multi-Model Analysis Complete"}
                 </h3>
                 <button
                   onClick={handleDeleteAndRestart}
@@ -762,152 +976,171 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                   <IconTrash size={16} /> Delete & Restart
                 </button>
               </div>
-              {/* Dual-panel layout */}
+              {/* Two Panel Layout: Left = Analysis Results (70%), Right = Combined Text (30%) */}
               <div className="flex-1 flex overflow-hidden">
-                {/* Analysis Results Panel */}
-                <div className="flex-1 overflow-y-auto p-6 border-r border-slate-200">
+                {/* Left Panel - Analysis Results (70%) */}
+                <div className="w-[70%] overflow-y-auto p-6 bg-white">
                   <h4 className="font-bold text-slate-800 mb-4">
                     Analysis Results
                   </h4>
 
-                  {singleModelMode && singleModelResult ? (
-                    // Single model result display
-                    <div className="max-w-none bg-white rounded-lg border border-slate-200 shadow-sm mb-6">
-                      <div className="p-6">
-                        <div className="mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                          <span className="font-semibold text-slate-700">
-                            Model:{" "}
-                            {calculationSettings?.singleModelName ||
-                              "Single Model"}
-                          </span>
-                          <span className="text-sm text-slate-500">
-                            Temperature:{" "}
-                            {calculationSettings?.singleModelTemperature || 0.7}
-                          </span>
-                        </div>
-                        <div
-                          className="prose prose-slate max-w-none"
-                          dangerouslySetInnerHTML={{
-                            __html: formatAnalysisResult(singleModelResult),
-                          }}
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    // Multi-model results display
-                    analysisResults.map((result, index) => (
-                      <div
-                        key={index}
-                        className="max-w-none bg-white rounded-lg border border-slate-200 shadow-sm mb-6"
-                      >
-                        <div className="p-6">
-                          <div className="mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                            <span className="font-semibold text-slate-700">
-                              Model:{" "}
-                              {calculationSettings?.modelNames?.[index] ||
-                                `Model ${index + 1}`}
-                            </span>
-                          </div>
-                          <div
-                            className="prose prose-slate max-w-none"
-                            dangerouslySetInnerHTML={{
-                              __html: formatAnalysisResult(result),
-                            }}
-                          />
-                        </div>
-                      </div>
-                    ))
-                  )}
-                </div>
-
-                {/* Conversation History Panel */}
-                <div className="w-1/3 overflow-y-auto p-6 bg-slate-50">
-                  <h4 className="font-bold text-slate-800 mb-4">
-                    Conversation History
-                  </h4>
-                  <div className="space-y-4">
-                    {filteredHistoryForDisplay?.map((msg, index) => {
-                      // Calculate exchange number based on message pairs
-                      const exchangeNumber = Math.floor(index / 2) + 1;
-                      const isHighlighted =
-                        highlightedExchanges.has(exchangeNumber);
-
-                      return (
-                        <div
-                          key={index}
-                          className={`p-4 rounded-lg border ${
-                            isHighlighted
-                              ? "border-blue-500 bg-blue-50 shadow-sm"
-                              : "border-slate-200 bg-white"
-                          }`}
-                        >
-                          <div className="flex items-start">
-                            <div
-                              className={`w-8 h-8 rounded-full flex items-center justify-center mr-3 ${
-                                msg.role === "ai"
-                                  ? "bg-blue-500"
-                                  : "bg-green-500"
-                              }`}
-                            >
-                              <span className="text-white font-bold text-sm">
-                                {msg.role === "ai" ? "P" : "U"}
+                  {analysisResults.length > 0 || singleModelResult ? (
+                    <div className="space-y-6">
+                      {singleModelMode && singleModelResult ? (
+                        // Single model result display
+                        <div className="max-w-none bg-slate-50 rounded-lg border border-slate-200 shadow-sm">
+                          <div className="p-6">
+                            <div className="mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between">
+                              <span className="font-semibold text-slate-700">
+                                Model:{" "}
+                                {calculationSettings?.singleModelName ||
+                                  "Single Model"}
+                              </span>
+                              <span className="text-sm text-slate-500">
+                                Temperature:{" "}
+                                {calculationSettings?.singleModelTemperature ||
+                                  0.7}
                               </span>
                             </div>
-                            <div className="flex-1">
-                              <div className="flex justify-between items-start">
+                            <div
+                              className="prose prose-slate max-w-none"
+                              dangerouslySetInnerHTML={{
+                                __html: formatAnalysisResult(singleModelResult),
+                              }}
+                            />
+                          </div>
+                        </div>
+                      ) : (
+                        // Multi-model results display
+                        analysisResults.map((result, index) => (
+                          <div
+                            key={index}
+                            className="max-w-none bg-slate-50 rounded-lg border border-slate-200 shadow-sm"
+                          >
+                            <div className="p-6">
+                              <div className="mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between">
                                 <span className="font-semibold text-slate-700">
-                                  {msg.role === "ai" ? "Psychiatrist" : "User"}
-                                </span>
-                                <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded">
-                                  Exchange {exchangeNumber}
+                                  Model:{" "}
+                                  {calculationSettings?.modelNames?.[index] ||
+                                    `Model ${index + 1}`}
                                 </span>
                               </div>
                               <div
-                                className="mt-1 text-slate-700 whitespace-pre-wrap"
+                                className="prose prose-slate max-w-none"
                                 dangerouslySetInnerHTML={{
-                                  __html: (() => {
-                                    // Process bold text FIRST, before removing any notes
-                                    let processedContent = msg.content;
-
-                                    // For AI messages, remove everything after the main question
-                                    if (msg.role === "ai") {
-                                      // Remove progress tracking and reminder sections
-                                      processedContent = processedContent
-                                        .replace(
-                                          /---[\s\S]*Progress:[\s\S]*$/gm,
-                                          ""
-                                        )
-                                        .replace(
-                                          /---[\s\S]*?\*\*Reminder\*\*[\s\S]*$/gm,
-                                          ""
-                                        )
-                                        .replace(
-                                          /\*\*Reminder\*\*[\s\S]*$/gm,
-                                          ""
-                                        )
-                                        .replace(/---[\s\S]*$/gm, "")
-                                        .trim();
-                                    }
-
-                                    processedContent = processedContent.replace(
-                                      /\*\*([^*]+)\*\*/g,
-                                      '<strong class="font-bold text-slate-900">$1</strong>'
-                                    );
-
-                                    processedContent = processedContent
-                                      .replace(/\*\([^*\)]*\)\*/g, "")
-                                      .replace(/\([^<>)]*\)/g, "")
-                                      .trim();
-
-                                    return processedContent;
-                                  })(),
+                                  __html: formatAnalysisResult(result),
                                 }}
                               />
                             </div>
                           </div>
+                        ))
+                      )}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center h-full text-center">
+                      <p className="text-slate-500 max-w-sm leading-relaxed">
+                        Analysis results will appear here after running the
+                        analysis.
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Panel - Combined Text (30%) */}
+                <div className="w-[30%] border-l border-slate-200 overflow-y-auto p-6 bg-slate-50">
+                  <h4 className="font-bold text-slate-800 mb-4">
+                    Combined Text
+                  </h4>
+                  <div className="space-y-4">
+                    {existingMakeTextAnalysis?.combinedText ? (
+                      <div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
+                        <div className="mb-3 flex items-center justify-between">
+                          <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded font-medium">
+                            Combined Conversation Text
+                          </span>
+                          <span className="text-xs text-slate-500">
+                            {existingMakeTextAnalysis.combinedText.length}{" "}
+                            characters
+                          </span>
                         </div>
-                      );
-                    })}
+                        <div
+                          className="text-slate-700 text-sm leading-relaxed"
+                          dangerouslySetInnerHTML={{
+                            __html: (() => {
+                              const formattedText =
+                                existingMakeTextAnalysis.combinedText;
+
+                              // Split by double newlines to get exchanges
+                              const exchanges = formattedText.split("\n\n");
+                              let result = "";
+
+                              exchanges.forEach((exchange) => {
+                                if (exchange.trim()) {
+                                  // Check if this starts with an exchange number
+                                  const exchangeMatch = exchange.match(
+                                    /^(Exchange \d+)\s+(user|assistant|mentor|system):\s*([\s\S]*)$/
+                                  );
+
+                                  if (exchangeMatch) {
+                                    const [, exchangeNum, role, content] =
+                                      exchangeMatch;
+
+                                    // Determine styling based on role
+                                    const roleColor =
+                                      role === "user"
+                                        ? "bg-green-100 text-green-800"
+                                        : role === "assistant"
+                                          ? "bg-blue-100 text-blue-800"
+                                          : role === "mentor"
+                                            ? "bg-purple-100 text-purple-800"
+                                            : "bg-gray-100 text-gray-800";
+
+                                    const borderColor =
+                                      role === "user"
+                                        ? "border-l-green-400"
+                                        : role === "assistant"
+                                          ? "border-l-blue-400"
+                                          : role === "mentor"
+                                            ? "border-l-purple-400"
+                                            : "border-l-gray-400";
+
+                                    result += `
+                                      <div class="mb-4">
+                                        <div class="flex items-center gap-2 mb-2">
+                                          <span class="text-xs font-bold px-2 py-1 rounded ${roleColor}">
+                                            ${exchangeNum}
+                                          </span>
+                                          <span class="text-xs font-semibold text-slate-600 capitalize">
+                                            ${role}
+                                          </span>
+                                        </div>
+                                        <div class="ml-2 p-3 bg-white rounded border-l-4 ${borderColor} shadow-sm">
+                                          <div class="text-slate-700 leading-relaxed">
+                                            ${content.trim().replace(/\n/g, "<br>")}
+                                          </div>
+                                        </div>
+                                      </div>
+                                    `;
+                                  } else {
+                                    // Handle any malformed content
+                                    result += `<div class="mb-2 p-2 bg-gray-50 rounded text-slate-600 text-xs">${exchange.replace(/\n/g, "<br>")}</div>`;
+                                  }
+                                }
+                              });
+
+                              return result;
+                            })(),
+                          }}
+                        />
+                      </div>
+                    ) : (
+                      <div className="p-4 rounded-lg border border-gray-200 bg-gray-50">
+                        <p className="text-gray-500 text-sm">
+                          No combined text available. Run Make Text Analysis to
+                          generate combined text.
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -937,6 +1170,12 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                 >
                   Start Single Model Analysis
                 </button>
+                <button
+                  onClick={handleMakeTextClick}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
+                >
+                  Make Text Analysis
+                </button>
               </div>
             </div>
           )}
@@ -956,7 +1195,9 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
             <h3 className="text-lg font-bold text-slate-800 mb-4">
               {singleModelMode
                 ? "Select Single Model Prompt"
-                : "Select Prompts"}
+                : makeTextMode
+                  ? "Select Prompts for Make Text Analysis"
+                  : "Select Prompts"}
             </h3>
 
             {singleModelMode ? (
@@ -977,6 +1218,41 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                     </option>
                   ))}
                 </select>
+              </div>
+            ) : makeTextMode ? (
+              // Make text mode - show all prompts for selection
+              <div className="mb-4">
+                <div className="mb-3 p-3 bg-green-50 border-l-4 border-green-400 rounded">
+                  <p className="text-sm text-green-800">
+                    <strong>✅ Combined Text Created:</strong> The conversation
+                    has been successfully combined and saved to the database.
+                    Now select prompts for each model to start the analysis.
+                  </p>
+                </div>
+                {modelNames.map((modelName, index) => {
+                  const promptsForModel = modelPrompts[index] || [];
+                  return (
+                    <div key={modelName} className="mb-3">
+                      <h4 className="text-slate-700 font-medium text-sm">
+                        {modelName} Prompt:
+                      </h4>
+                      <select
+                        value={selectedPrompts[index] || ""}
+                        onChange={(e) =>
+                          handlePromptSelect(index, e.target.value)
+                        }
+                        className="w-full border p-2 rounded text-sm"
+                      >
+                        <option value="">Select a prompt</option>
+                        {promptsForModel.map((prompt) => (
+                          <option key={prompt._id} value={prompt._id}>
+                            {prompt.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               // Multi-model prompt selection
@@ -1013,18 +1289,25 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                 onClick={
                   singleModelMode
                     ? handleSingleModelAnalysis
-                    : handleStartAnalysis
+                    : makeTextMode
+                      ? handleMakeTextAnalysis
+                      : handleStartAnalysis
                 }
-                className="bg-slate-600 text-white py-2 px-4 rounded-lg"
+                className="bg-slate-600 text-white py-2 px-4 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
                 disabled={
                   singleModelMode
                     ? !selectedSinglePrompt
-                    : selectedPrompts.some((p) => !p)
+                    : makeTextMode
+                      ? selectedPrompts.some((p) => !p) ||
+                        !existingMakeTextAnalysis?.combinedText
+                      : selectedPrompts.some((p) => !p)
                 }
               >
                 {singleModelMode
                   ? "Start Single Model Analysis"
-                  : "Start Multi-Model Analysis"}
+                  : makeTextMode
+                    ? "Start Make Text Analysis"
+                    : "Start Multi-Model Analysis"}
               </button>
             </div>
           </div>

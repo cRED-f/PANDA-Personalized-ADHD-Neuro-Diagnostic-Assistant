@@ -71,6 +71,7 @@ export default defineSchema({
     temperatures: v.array(v.number()),
     singleModelName: v.optional(v.string()),
     singleModelTemperature: v.optional(v.number()),
+    calculationApiKey: v.optional(v.string()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }),
@@ -85,4 +86,20 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_chat_and_model", ["chatId", "modelName"]),
+  makeTextAnalyses: defineTable({
+    chatId: v.string(),
+    combinedText: v.string(),
+    analysisResults: v.array(
+      v.object({
+        modelName: v.string(),
+        promptId: v.string(),
+        promptName: v.string(),
+        promptContent: v.string(),
+        temperature: v.number(),
+        result: v.string(),
+      })
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_chat", ["chatId"]),
 });

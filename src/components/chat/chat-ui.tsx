@@ -301,6 +301,7 @@ Please incorporate this guidance into your response while maintaining your natur
             temperature: apiSettings?.temperature ?? 0.0,
           });
           if (aiResponse) {
+            // Save the complete AI response to database (including tracking info)
             await sendMessage({
               chatId,
               content: aiResponse,

@@ -31,6 +31,9 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
   );
   const [singleModelTemperature, setSingleModelTemperature] = useState(0.7);
 
+  // Calculation API key state
+  const [calculationApiKey, setCalculationApiKey] = useState("");
+
   // Query to get calculation settings from database
   const calculationSettings = useQuery(
     api.calculationSettings.getCalculationSettings
@@ -49,6 +52,7 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
         temperatures: savedTemperatures,
         singleModelName: savedSingleModelName,
         singleModelTemperature: savedSingleModelTemperature,
+        calculationApiKey: savedCalculationApiKey,
       } = calculationSettings;
 
       if (savedModelNames) setModelNames(savedModelNames);
@@ -56,6 +60,7 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
       if (savedSingleModelName) setSingleModelName(savedSingleModelName);
       if (savedSingleModelTemperature !== undefined)
         setSingleModelTemperature(savedSingleModelTemperature);
+      if (savedCalculationApiKey) setCalculationApiKey(savedCalculationApiKey);
     }
   }, [calculationSettings]);
 
@@ -70,6 +75,7 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
         temperatures,
         singleModelName,
         singleModelTemperature,
+        calculationApiKey,
       });
       setIsEditing(false);
       console.log("Settings saved successfully");
@@ -156,6 +162,26 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
             disabled={!isEditing}
             className="mt-1"
           />
+        </div>
+
+        <h3 className="text-md font-medium text-gray-800 border-b pb-2 mb-4 mt-8">
+          API Configuration
+        </h3>
+        <div>
+          <Label htmlFor="calculation-api-key">Calculation API Key</Label>
+          <Input
+            id="calculation-api-key"
+            type="password"
+            value={calculationApiKey}
+            onChange={(e) => setCalculationApiKey(e.target.value)}
+            disabled={!isEditing}
+            className="mt-1"
+            placeholder="Enter API key for calculations (optional)"
+          />
+          <p className="text-xs text-gray-500 mt-1">
+            Use a different API key specifically for calculations. Leave empty
+            to use the main API key.
+          </p>
         </div>
 
         <div className="pt-4">

@@ -258,3 +258,124 @@ export const importChat = mutation({
     return chatId;
   },
 });
+
+// Save just the combined text (before analysis)
+export const saveCombinedText = mutation({
+  args: {
+    chatId: v.string(),
+    combinedText: v.string(),
+  },
+  handler: async (ctx, args) => {
+    // Check if there's already a make text analysis for this chat
+    const existing = await ctx.db
+      .query("makeTextAnalyses")
+      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
+      .first();
+
+    if (existing) {
+      // Update existing with new combined text, keep empty analysis results
+      await ctx.db.patch(existing._id, {
+        combinedText: args.combinedText,
+        analysisResults: [],
+        updatedAt: Date.now(),
+      });
+      return existing._id;
+    } else {
+      // Create new entry with just combined text
+      const analysisId = await ctx.db.insert("makeTextAnalyses", {
+        chatId: args.chatId,
+        combinedText: args.combinedText,
+        analysisResults: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      return analysisId;
+    }
+  },
+});
+
+// Save Make Text Analysis
+export const saveMakeTextAnalysis = mutation({
+  args: {
+    chatId: v.string(),
+    combinedText: v.string(),
+    analysisResults: v.array(
+      v.object({
+        modelName: v.string(),
+        promptId: v.string(),
+        promptName: v.string(),
+        promptContent: v.string(),
+        temperature: v.number(),
+        result: v.string(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    // Check if there's already a make text analysis for this chat
+    const existing = await ctx.db
+      .query("makeTextAnalyses")
+      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
+      .first();
+
+    if (existing) {
+      // Update existing analysis
+      await ctx.db.patch(existing._id, {
+        combinedText: args.combinedText,
+        analysisResults: args.analysisResults,
+        updatedAt: Date.now(),
+      });
+      return existing._id;
+    } else {
+      // Create new analysis
+      const analysisId = await ctx.db.insert("makeTextAnalyses", {
+        chatId: args.chatId,
+        combinedText: args.combinedText,
+        analysisResults: args.analysisResults,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+      });
+      return analysisId;
+    }
+  },
+});
+
+// Get Make Text Analysis
+export const getMakeTextAnalysis = query({
+  args: { chatId: v.string() },
+  handler: async (ctx, args) => {
+    const analysis = await ctx.db
+      .query("makeTextAnalyses")
+      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
+      .first();
+
+    return analysis;
+  },
+});
+
+// Get combined text for a chat (for sending to models)
+export const getCombinedText = query({
+  args: { chatId: v.string() },
+  handler: async (ctx, args) => {
+    const analysis = await ctx.db
+      .query("makeTextAnalyses")
+      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
+      .first();
+
+    return analysis?.combinedText || null;
+  },
+});
+
+// Delete Make Text Analysis
+export const deleteMakeTextAnalysis = mutation({
+  args: { chatId: v.string() },
+  handler: async (ctx, args) => {
+    const analysis = await ctx.db
+      .query("makeTextAnalyses")
+      .withIndex("by_chat", (q) => q.eq("chatId", args.chatId))
+      .first();
+
+    if (analysis) {
+      await ctx.db.delete(analysis._id);
+    }
+  },
+});

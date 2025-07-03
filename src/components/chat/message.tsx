@@ -59,7 +59,7 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
     }
   };
 
-  const { cleanContent, reminderContent } = getAssistantData(message.content);
+  const { reminderContent } = getAssistantData(message.content);
 
   // Simplified animation variants for better performance
   const messageVariants = {
@@ -76,9 +76,11 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
       },
     },
   };
-  const removeNotes = (content: string) => {
-    // Remove content inside parentheses, asterisks (bold formatting), and reminder sections
+
+  // Filter tracking info for frontend display only
+  const filterTrackingInfo = (content: string) => {
     return content
+      .replace(/```[\s\S]*?CONVERSATION STAGE:[\s\S]*?```/g, "")
       .replace(/\(.*?\)/g, "")
       .replace(/\*\*/g, "")
       .replace(/---[\s\S]*?\*\*Reminder\*\*[\s\S]*$/gm, "")
@@ -87,6 +89,7 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
       .replace(/---[\s\S]*$/gm, "")
       .trim();
   };
+
   return (
     <motion.div
       variants={messageVariants}
@@ -159,7 +162,7 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
                   ),
                 }}
               >
-                {removeNotes(message.content)}
+                {filterTrackingInfo(message.content)}
               </ReactMarkdown>
             </div>
           )}

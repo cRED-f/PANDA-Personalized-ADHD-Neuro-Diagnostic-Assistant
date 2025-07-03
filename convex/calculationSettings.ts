@@ -16,6 +16,7 @@ export const saveCalculationSettings = mutation({
     temperatures: v.array(v.number()), // Accept an array of temperatures
     singleModelName: v.optional(v.string()), // Single model name
     singleModelTemperature: v.optional(v.number()), // Single model temperature
+    calculationApiKey: v.optional(v.string()), // API key for calculations
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -30,6 +31,7 @@ export const saveCalculationSettings = mutation({
         temperatures: args.temperatures,
         singleModelName: args.singleModelName,
         singleModelTemperature: args.singleModelTemperature,
+        calculationApiKey: args.calculationApiKey,
         updatedAt: now,
       });
       return existingSettings._id;
@@ -40,6 +42,7 @@ export const saveCalculationSettings = mutation({
         temperatures: args.temperatures,
         singleModelName: args.singleModelName,
         singleModelTemperature: args.singleModelTemperature,
+        calculationApiKey: args.calculationApiKey,
         createdAt: now,
         updatedAt: now,
       });
