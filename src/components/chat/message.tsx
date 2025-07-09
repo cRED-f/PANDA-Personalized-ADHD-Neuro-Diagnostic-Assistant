@@ -7,8 +7,6 @@ import {
   IconFileTextAi,
   IconCopy,
   IconEdit,
-  IconBrain,
-  IconCompass,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -32,34 +30,6 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
     setTimeout(() => setShowCheckmark(false), 2000);
   };
   const isAI = message.role === "ai";
-  const isAssistant = message.role === "assistant";
-  const isMentor = message.role === "mentor";
-  // Extract reminder content and clean content for assistant messages
-  const getAssistantData = (content: string) => {
-    if (!isAssistant) return { cleanContent: content, reminderContent: null };
-
-    const reminderMatch = content.match(
-      /\[ASSISTANT_GUIDANCE_START\]([\s\S]*?)\[ASSISTANT_GUIDANCE_END\]/
-    );
-
-    if (reminderMatch) {
-      // If guidance tags exist, extract the content and remove the tags
-      const reminderContent = reminderMatch[1].trim();
-      const cleanContent = content
-        .replace(
-          /\[ASSISTANT_GUIDANCE_START\][\s\S]*?\[ASSISTANT_GUIDANCE_END\]/g,
-          ""
-        )
-        .trim();
-
-      return { cleanContent, reminderContent };
-    } else {
-      // For assistant messages without guidance tags, treat entire content as reminder
-      return { cleanContent: "", reminderContent: content };
-    }
-  };
-
-  const { reminderContent } = getAssistantData(message.content);
 
   // Simplified animation variants for better performance
   const messageVariants = {
@@ -97,13 +67,9 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
       animate="visible"
       className={cn(
         "group relative border-b border-white/20 px-4 py-6 transition-colors duration-200",
-        isAssistant
-          ? "bg-slate-50/60"
-          : isMentor
-            ? "bg-red-50/60"
-            : isAI
-              ? "bg-emerald-50/60" // AI background color
-              : "bg-blue-50/40" // User background color (set for the user message)
+        isAI
+          ? "bg-emerald-50/60" // AI background color
+          : "bg-blue-50/40" // User background color (set for the user message)
       )}
       onMouseEnter={() => setIsHovering(true)}
       onMouseLeave={() => setIsHovering(false)}
@@ -114,23 +80,15 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
           <div
             className={cn(
               "flex h-8 w-8 items-center justify-center rounded-full border transition-transform duration-200 hover:scale-110",
-              isAssistant
-                ? "bg-gradient-to-br from-gray-500 via-slate-500 to-zinc-600 text-white shadow-lg border-gray-300/50"
-                : isMentor
-                  ? "bg-gradient-to-br from-red-500 via-rose-500 to-pink-600 text-white shadow-lg border-red-300/50"
-                  : isAI
-                    ? "bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 text-white shadow-lg border-emerald-300/50"
-                    : "bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 text-white shadow-lg border-blue-300/50" // User avatar
+              isAI
+                ? "bg-gradient-to-br from-emerald-500 via-green-500 to-teal-600 text-white shadow-lg border-emerald-300/50"
+                : "bg-gradient-to-br from-blue-500 via-indigo-500 to-purple-600 text-white shadow-lg border-blue-300/50" // User avatar
             )}
           >
-            {isAssistant ? (
-              <IconBrain size={18} className="drop-shadow-sm" />
-            ) : isMentor ? (
-              <IconCompass size={18} className="drop-shadow-sm" />
-            ) : isAI ? (
+            {isAI ? (
               <IconFileTextAi size={18} className="drop-shadow-sm" />
             ) : (
-              <IconUser size={18} className="drop-shadow-sm" /> // User icon
+              <IconUser size={18} className="drop-shadow-sm" />
             )}
           </div>
         </div>
@@ -168,7 +126,7 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
           )}
 
           {/* User Message */}
-          {!isAssistant && !isMentor && !isAI && (
+          {!isAI && (
             <div className="border-l-4 border-blue-400 pl-4 py-2 bg-blue-50 rounded-lg shadow-sm max-w-full">
               <ReactMarkdown
                 components={{
@@ -194,21 +152,6 @@ export const Message: FC<MessageProps> = ({ message, onEdit }) => {
               >
                 {message.content}
               </ReactMarkdown>
-            </div>
-          )}
-
-          {/* Assistant and Mentor Messages */}
-          {isAssistant && reminderContent && (
-            <div className="mb-3 p-3 bg-amber-50 border-l-4 border-amber-400 rounded-r-lg">
-              {/* Assistant Reminder Content */}
-              <ReactMarkdown>{reminderContent}</ReactMarkdown>
-            </div>
-          )}
-
-          {isMentor && reminderContent && (
-            <div className="mb-3 p-3 bg-red-50 border-l-4 border-red-400 rounded-r-lg">
-              {/* Mentor Reminder Content */}
-              <ReactMarkdown>{reminderContent}</ReactMarkdown>
             </div>
           )}
         </div>

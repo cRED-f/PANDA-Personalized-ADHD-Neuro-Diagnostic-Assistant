@@ -12,6 +12,7 @@ import { WithTooltip } from "@/components/ui/with-tooltip";
 import { motion, AnimatePresence } from "framer-motion";
 import { ContentType } from "@/types";
 import { CalculationInterface } from "@/components/calculation/calculation-interface";
+import { VoiceAssistantModal } from "@/components/voice-assistant/voice-assistant-modal";
 
 function HomeContent() {
   const { currentChatId, setCurrentChatId } = useChatContext();
@@ -31,6 +32,15 @@ function HomeContent() {
       case "calculation-settings":
         return (
           <CalculationInterface selectedChatId={selectedCalculationChatId} />
+        );
+      case "voice-assistant":
+        return (
+          <div className="h-full">
+            <VoiceAssistantModal
+              isOpen={true}
+              onClose={() => setCurrentContentType("chats")}
+            />
+          </div>
         );
       default:
         return <ChatUI chatId={currentChatId} />;
@@ -115,14 +125,14 @@ function HomeContent() {
         />
       </div>
 
-      {/* Fixed Sidebar */}
+      {/* Floating Sidebar */}
       <motion.div
-        className="fixed left-0 top-0 h-full z-10 isolate"
-        initial={{ x: -100, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
+        className="fixed inset-0 z-10 pointer-events-none"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.6, delay: 0.2, ease: "easeOut" }}
       >
-        <div className="backdrop-blur-xl bg-white/80 border-r border-white/20 h-full">
+        <div className="pointer-events-auto">
           <Sidebar
             contentType={currentContentType}
             showSidebar={sidebarVisible}
@@ -134,11 +144,11 @@ function HomeContent() {
         </div>
       </motion.div>
 
-      {/* Show Sidebar Button - positioned in header area when sidebar is hidden */}
+      {/* Show Sidebar Button - positioned when sidebar is hidden */}
       <AnimatePresence>
         {!sidebarVisible && (
           <motion.div
-            className="fixed left-16 top-3 z-50"
+            className="fixed left-4 top-1/2 transform -translate-y-1/2 z-50"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
@@ -156,10 +166,10 @@ function HomeContent() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7 rounded-md bg-white/80 backdrop-blur-md text-gray-600 shadow-lg ring-1 ring-white/20 hover:bg-white/90 hover:text-gray-900 hover:ring-gray-300 transition-all duration-200"
+                    className="h-12 w-12 rounded-xl bg-white/20 backdrop-blur-xl text-gray-600 shadow-lg border border-white/30 hover:bg-white/30 hover:text-gray-900 transition-all duration-200"
                     onClick={() => setSidebarVisible(true)}
                   >
-                    <IconChevronRight size={16} />
+                    <IconChevronRight size={20} />
                   </Button>
                 </motion.div>
               }
@@ -168,12 +178,9 @@ function HomeContent() {
         )}
       </AnimatePresence>
 
-      {/* Main Chat Area with left margin and animation */}
+      {/* Main Chat Area - Full width with padding for sidebar */}
       <motion.div
-        className="h-full flex flex-col transition-all duration-300"
-        style={{
-          marginLeft: sidebarVisible ? "320px" : "56px",
-        }}
+        className="h-full flex flex-col"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.4, ease: "easeOut" }}

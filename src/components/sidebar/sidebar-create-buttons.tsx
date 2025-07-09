@@ -36,14 +36,7 @@ export const SidebarCreateButtons: FC<SidebarCreateButtonsProps> = ({
         return async () => {
           console.log("Create prompt");
         };
-      case "assistants":
-        return async () => {
-          console.log("Create assistant");
-        };
-      case "tools":
-        return async () => {
-          console.log("Create tool");
-        };
+
       default:
         return async () => {};
     }

@@ -39,7 +39,7 @@ export const saveApiSettings = mutation({
       // Create new settings with defaults
       const settingsId = await ctx.db.insert("settings", {
         apiKey: args.apiKey || "",
-        provider: args.provider || "OpenRouter",
+        provider: args.provider || "OpenAI",
         modelName: args.modelName,
         temperature: args.temperature ?? 0.0,
         createdAt: now,

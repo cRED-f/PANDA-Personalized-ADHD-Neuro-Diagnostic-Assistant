@@ -6,19 +6,10 @@ import { TextareaAutosize } from "@/components/ui/textarea-autosize";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { PromptSelector } from "@/components/prompts/prompt-selector";
-import { AssistantPromptSelector } from "@/components/prompts/assistant-prompt-selector";
-import { MentorPromptSelector } from "@/components/prompts/mentor-prompt-selector";
 
 interface ChatInputProps {
-  onSendMessage: (
-    message: string,
-    systemPrompt?: string,
-    assistantPrompt?: string,
-    mentorPrompt?: string
-  ) => void;
+  onSendMessage: (message: string, systemPrompt?: string) => void;
   isGenerating?: boolean;
-  isAssistantAnalyzing?: boolean;
-  isMentorAnalyzing?: boolean;
   onStopGeneration?: () => void;
   isFirstMessage?: boolean;
 }
@@ -26,15 +17,12 @@ interface ChatInputProps {
 export const ChatInput: FC<ChatInputProps> = ({
   onSendMessage,
   isGenerating = false,
-  isAssistantAnalyzing = false,
-  isMentorAnalyzing = false,
   onStopGeneration,
   isFirstMessage = true,
 }) => {
   const [userInput, setUserInput] = useState("");
   const [selectedPrompt, setSelectedPrompt] = useState("");
-  const [selectedAssistantPrompt, setSelectedAssistantPrompt] = useState("");
-  const [selectedMentorPrompt, setSelectedMentorPrompt] = useState("");
+
   const [isTyping, setIsTyping] = useState(false);
   const [isFocused, setIsFocused] = useState(false);
   const chatInputRef = useRef<HTMLTextAreaElement>(null);
@@ -46,44 +34,19 @@ export const ChatInput: FC<ChatInputProps> = ({
   const handlePromptSelect = useCallback((promptContent: string) => {
     setSelectedPrompt(promptContent);
   }, []);
-  const handleAssistantPromptSelect = useCallback((promptContent: string) => {
-    setSelectedAssistantPrompt(promptContent);
-  }, []);
 
-  const handleMentorPromptSelect = useCallback((promptContent: string) => {
-    setSelectedMentorPrompt(promptContent);
-  }, []);
   const handleSendMessage = useCallback(() => {
     if (!userInput.trim() || isGenerating) return;
 
     // Send user input to display in chat, and selected prompts as system messages
-    onSendMessage(
-      userInput.trim(),
-      selectedPrompt || undefined,
-      selectedAssistantPrompt || undefined,
-      selectedMentorPrompt || undefined
-    );
+    onSendMessage(userInput.trim(), selectedPrompt || undefined);
     setUserInput("");
 
     // Keep prompts selected until manually cleared - do not auto-clear
-  }, [
-    userInput,
-    selectedPrompt,
-    selectedAssistantPrompt,
-    selectedMentorPrompt,
-    isGenerating,
-    onSendMessage,
-  ]);
+  }, [userInput, selectedPrompt, isGenerating, onSendMessage]);
 
   const handleClearPrompt = useCallback(() => {
     setSelectedPrompt("");
-  }, []);
-  const handleClearAssistantPrompt = useCallback(() => {
-    setSelectedAssistantPrompt("");
-  }, []);
-
-  const handleClearMentorPrompt = useCallback(() => {
-    setSelectedMentorPrompt("");
   }, []);
 
   const handleKeyDown = useCallback(
@@ -104,110 +67,17 @@ export const ChatInput: FC<ChatInputProps> = ({
   return (
     <div className="mx-auto max-w-3xl px-4 pb-4 space-y-2">
       {" "}
-      {/* Prompt Selectors - Above the input */}
+      {/* Prompt Selector - Above the input */}
       <div className="flex justify-between gap-3">
         <PromptSelector onPromptSelect={handlePromptSelect} />
-        <div className="flex gap-2">
-          <AssistantPromptSelector
-            onPromptSelect={handleAssistantPromptSelect}
-          />
-          <MentorPromptSelector onPromptSelect={handleMentorPromptSelect} />
-        </div>
       </div>{" "}
-      {/* Assistant Analyzing Indicator */}
-      {isAssistantAnalyzing && (
-        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-3">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
-              <div
-                className="w-2 h-2 bg-purple-400 rounded-full animate-pulse"
-                style={{ animationDelay: "0.2s" }}
-              ></div>
-              <div
-                className="w-2 h-2 bg-purple-300 rounded-full animate-pulse"
-                style={{ animationDelay: "0.4s" }}
-              ></div>
-            </div>
-            <div className="text-sm font-medium text-purple-700">
-              Assistant is analyzing the conversation...
-            </div>
-          </div>{" "}
-        </div>
-      )}
-      {/* Mentor Analyzing Indicator */}
-      {isMentorAnalyzing && (
-        <div className="bg-gradient-to-r from-red-50 to-rose-50 border border-red-200 rounded-lg p-3">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse"></div>
-              <div
-                className="w-2 h-2 bg-red-400 rounded-full animate-pulse"
-                style={{ animationDelay: "0.2s" }}
-              ></div>
-              <div
-                className="w-2 h-2 bg-red-300 rounded-full animate-pulse"
-                style={{ animationDelay: "0.4s" }}
-              ></div>
-            </div>
-            <div className="text-sm font-medium text-red-700">
-              Mentor is analyzing your input...
-            </div>
-          </div>{" "}
-        </div>
-      )}
       {/* Selected Prompt Indicators - Only show for first message */}
-      {isFirstMessage && selectedAssistantPrompt && (
-        <div className="bg-purple-50 border border-purple-200 rounded-lg p-3">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="text-sm font-medium text-purple-700 mb-1">
-                Selected Assistant Prompt:
-              </div>
-              <div className="text-sm text-purple-600 line-clamp-2">
-                {selectedAssistantPrompt.length > 100
-                  ? `${selectedAssistantPrompt.substring(0, 100)}...`
-                  : selectedAssistantPrompt}
-              </div>
-            </div>
-            <button
-              onClick={handleClearAssistantPrompt}
-              className="ml-2 text-purple-500 hover:text-purple-700 transition-colors"
-            >
-              ×
-            </button>
-          </div>{" "}
-        </div>
-      )}
-      {/* Selected Mentor Prompt Indicator */}
-      {isFirstMessage && selectedMentorPrompt && (
-        <div className="bg-orange-50 border border-orange-200 rounded-lg p-3">
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <div className="text-sm font-medium text-orange-700 mb-1">
-                Selected Mentor Prompt:
-              </div>
-              <div className="text-sm text-orange-600 line-clamp-2">
-                {selectedMentorPrompt.length > 100
-                  ? `${selectedMentorPrompt.substring(0, 100)}...`
-                  : selectedMentorPrompt}
-              </div>
-            </div>
-            <button
-              onClick={handleClearMentorPrompt}
-              className="ml-2 text-orange-500 hover:text-orange-700 transition-colors"
-            >
-              ×
-            </button>
-          </div>
-        </div>
-      )}
       {isFirstMessage && selectedPrompt && (
         <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <div className="text-sm font-medium text-blue-700 mb-1">
-                Selected Main Prompt:
+                Selected Prompt:
               </div>
               <div className="text-sm text-blue-600 line-clamp-2">
                 {selectedPrompt.length > 100
@@ -221,7 +91,7 @@ export const ChatInput: FC<ChatInputProps> = ({
             >
               ×
             </button>
-          </div>{" "}
+          </div>
         </div>
       )}
       {/* Chat Input */}
@@ -237,21 +107,9 @@ export const ChatInput: FC<ChatInputProps> = ({
           textareaRef={chatInputRef as React.RefObject<HTMLTextAreaElement>}
           className="w-full resize-none border-none bg-transparent px-4 py-3 pr-12 text-base placeholder-gray-400 focus:outline-none"
           placeholder={
-            selectedPrompt && selectedAssistantPrompt && selectedMentorPrompt
-              ? "Add your message to all prompts..."
-              : selectedPrompt && selectedAssistantPrompt
-                ? "Add your message to main and assistant prompts..."
-                : selectedPrompt && selectedMentorPrompt
-                  ? "Add your message to main and mentor prompts..."
-                  : selectedAssistantPrompt && selectedMentorPrompt
-                    ? "Add your message to assistant and mentor prompts..."
-                    : selectedPrompt
-                      ? "Add your message to the main prompt..."
-                      : selectedAssistantPrompt
-                        ? "Add your message to the assistant prompt..."
-                        : selectedMentorPrompt
-                          ? "Add your message to the mentor prompt..."
-                          : "Ask anything..."
+            selectedPrompt
+              ? "Add your message to the selected prompt..."
+              : "Ask anything..."
           }
           onValueChange={handleInputChange}
           value={userInput}

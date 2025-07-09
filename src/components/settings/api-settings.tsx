@@ -9,7 +9,7 @@ import { IconKey, IconDeviceFloppy } from "@tabler/icons-react";
 
 export const ApiSettings: FC = () => {
   const [apiKey, setApiKey] = useState("");
-  const [provider, setProvider] = useState("OpenRouter");
+  const [provider, setProvider] = useState("OpenAI");
   const [modelName, setModelName] = useState("");
   const [isEditing, setIsEditing] = useState(false);
   const apiSettings = useQuery(api.settings.getApiSettings);
@@ -17,7 +17,7 @@ export const ApiSettings: FC = () => {
   useEffect(() => {
     if (apiSettings) {
       setApiKey(apiSettings.apiKey || "");
-      setProvider(apiSettings.provider || "OpenRouter");
+      setProvider(apiSettings.provider || "OpenAI");
       setModelName(apiSettings.modelName || "");
     }
   }, [apiSettings]);
@@ -43,7 +43,7 @@ export const ApiSettings: FC = () => {
     // Reset to original values
     if (apiSettings) {
       setApiKey(apiSettings.apiKey || "");
-      setProvider(apiSettings.provider || "OpenRouter");
+      setProvider(apiSettings.provider || "OpenAI");
       setModelName(apiSettings.modelName || "");
     }
     setIsEditing(false);
@@ -68,8 +68,8 @@ export const ApiSettings: FC = () => {
             disabled={!isEditing}
             className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-50 disabled:text-gray-500"
           >
-            <option value="OpenRouter">OpenRouter</option>
             <option value="OpenAI">OpenAI</option>
+            <option value="OpenRouter">OpenRouter</option>
             <option value="Anthropic">Anthropic</option>
             <option value="Google">Google AI</option>
           </select>
@@ -101,7 +101,7 @@ export const ApiSettings: FC = () => {
             type="text"
             value={modelName}
             onChange={(e) => setModelName(e.target.value)}
-            placeholder="e.g., gpt-4, claude-3-sonnet, etc."
+            placeholder="e.g., gpt-4o-mini, gpt-4, claude-3-sonnet, etc."
             disabled={!isEditing}
             className="w-full"
           />

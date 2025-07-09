@@ -2,18 +2,17 @@ export type ContentType =
   | "chats"
   | "presets"
   | "prompts"
-  | "assistants"
-  | "tools"
   | "settings"
   | "models"
   | "calculate-score"
   | "calculation-settings"
-  | "import-export";
+  | "import-export"
+  | "voice-assistant";
 
 export interface ChatMessage {
   _id: string;
   content: string;
-  role: "user" | "ai" | "assistant" | "mentor" | "system";
+  role: "user" | "ai" | "system";
   timestamp: number;
   chatId: string;
 }
@@ -122,3 +121,50 @@ export interface ApiSettings {
   createdAt: number;
   updatedAt: number;
 }
+
+// Speech Recognition types
+declare global {
+  interface Window {
+    SpeechRecognition: typeof SpeechRecognition;
+    webkitSpeechRecognition: typeof SpeechRecognition;
+  }
+}
+
+interface SpeechRecognitionEvent extends Event {
+  resultIndex: number;
+  results: SpeechRecognitionResultList;
+}
+
+interface SpeechRecognitionResultList {
+  length: number;
+  item(index: number): SpeechRecognitionResult;
+  [index: number]: SpeechRecognitionResult;
+}
+
+interface SpeechRecognitionResult {
+  length: number;
+  item(index: number): SpeechRecognitionAlternative;
+  [index: number]: SpeechRecognitionAlternative;
+  isFinal: boolean;
+}
+
+interface SpeechRecognitionAlternative {
+  transcript: string;
+  confidence: number;
+}
+
+interface SpeechRecognition extends EventTarget {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  start(): void;
+  stop(): void;
+  onresult: ((event: SpeechRecognitionEvent) => void) | null;
+  onend: (() => void) | null;
+  onerror: ((event: { error: string }) => void) | null;
+}
+
+declare const SpeechRecognition: {
+  prototype: SpeechRecognition;
+  new (): SpeechRecognition;
+};

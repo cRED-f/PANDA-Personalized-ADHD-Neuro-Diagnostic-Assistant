@@ -17,18 +17,16 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
 
   // State to hold model names and temperatures
   const [modelNames, setModelNames] = useState([
-    "anthropic/claude-3.5-sonnet",
-    "gpt-3.5-turbo",
+    "gpt-4o-mini",
+    "gpt-4o",
     "gpt-4",
-    "bert-base-uncased",
+    "gpt-3.5-turbo",
   ]);
 
   const [temperatures, setTemperatures] = useState([0.7, 0.7, 0.7, 0.7]);
 
   // Single model state
-  const [singleModelName, setSingleModelName] = useState(
-    "anthropic/claude-3.5-sonnet"
-  );
+  const [singleModelName, setSingleModelName] = useState("gpt-4o-mini");
   const [singleModelTemperature, setSingleModelTemperature] = useState(0.7);
 
   // Calculation API key state
@@ -142,7 +140,7 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
             onChange={(e) => setSingleModelName(e.target.value)}
             disabled={!isEditing}
             className="mt-1"
-            placeholder="e.g., anthropic/claude-3.5-sonnet"
+            placeholder="e.g., gpt-4o-mini, gpt-4, claude-3-sonnet"
           />
         </div>
         <div>

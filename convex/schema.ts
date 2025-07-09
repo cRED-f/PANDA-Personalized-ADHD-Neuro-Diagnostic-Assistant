@@ -4,13 +4,7 @@ import { v } from "convex/values";
 export default defineSchema({
   messages: defineTable({
     content: v.string(),
-    role: v.union(
-      v.literal("user"),
-      v.literal("ai"),
-      v.literal("assistant"),
-      v.literal("mentor"),
-      v.literal("system")
-    ),
+    role: v.union(v.literal("user"), v.literal("ai"), v.literal("system")),
     timestamp: v.number(),
     chatId: v.string(),
   }).index("by_chat", ["chatId"]),
@@ -34,8 +28,6 @@ export default defineSchema({
     targetModel: v.optional(
       v.union(
         v.literal("main"),
-        v.literal("assistant"),
-        v.literal("mentor"),
         v.literal("calculate-1"),
         v.literal("calculate-2"),
         v.literal("calculate-3"),
@@ -43,26 +35,6 @@ export default defineSchema({
         v.literal("single-model")
       )
     ),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  }),
-  assistants: defineTable({
-    name: v.string(),
-    modelName: v.optional(v.string()),
-    temperature: v.optional(v.number()),
-    activeAfterQuestions: v.optional(v.number()),
-    systemPrompt: v.optional(v.string()),
-    isDefault: v.optional(v.boolean()),
-    createdAt: v.number(),
-    updatedAt: v.number(),
-  }),
-  mentors: defineTable({
-    name: v.string(),
-    modelName: v.optional(v.string()),
-    temperature: v.optional(v.number()),
-    activeAfterQuestions: v.optional(v.number()),
-    systemPrompt: v.optional(v.string()),
-    isDefault: v.optional(v.boolean()),
     createdAt: v.number(),
     updatedAt: v.number(),
   }),

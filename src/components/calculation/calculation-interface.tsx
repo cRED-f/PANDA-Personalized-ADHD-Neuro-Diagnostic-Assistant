@@ -4,7 +4,7 @@ import { FC, useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { IconCalculator, IconX, IconTrash } from "@tabler/icons-react";
-import { useOpenRouter } from "@/hooks/useOpenRouter";
+import { useAI } from "@/hooks/useAI";
 import { OpenRouterMessage } from "@/lib/openrouter";
 import {
   filterAIMessageForDatabase,
@@ -100,7 +100,8 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   const saveAnalysis = useMutation(api.analyses.saveAnalysis);
   const deleteAnalysis = useMutation(api.analyses.deleteAnalysis);
 
-  const { sendMessage: sendToOpenRouter, isGenerating } = useOpenRouter(
+  const { sendMessage: sendToAI, isGenerating } = useAI(
+    "OpenAI", // Using OpenAI for calculations by default
     calculationSettings?.calculationApiKey
   );
 
@@ -327,7 +328,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
           userTextLength: makeText.length,
         });
 
-        const result = await sendToOpenRouter(messages, {
+        const result = await sendToAI(messages, {
           model: modelNames[index],
           temperature: calculationSettings.temperatures[index],
         });
@@ -466,9 +467,8 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
         }),
       ];
 
-      const result = await sendToOpenRouter(messages, {
-        model:
-          calculationSettings.singleModelName || "anthropic/claude-3.5-sonnet",
+      const result = await sendToAI(messages, {
+        model: calculationSettings.singleModelName || "gpt-4o-mini",
         temperature: calculationSettings.singleModelTemperature || 0.7,
       });
 
@@ -596,7 +596,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       });
       const results = await Promise.all(
         messagesForModels.map(async (modelData) => {
-          const result = await sendToOpenRouter(modelData.messages, {
+          const result = await sendToAI(modelData.messages, {
             model: modelData.model,
             temperature: modelData.temperature,
           });

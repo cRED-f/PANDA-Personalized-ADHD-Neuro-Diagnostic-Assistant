@@ -1,14 +1,6 @@
 "use client";
 
-import {
-  ContentType,
-  Chat,
-  Preset,
-  Prompt,
-  Assistant,
-  Tool,
-  Model,
-} from "@/types";
+import { ContentType, Chat, Preset, Prompt, Model } from "@/types";
 import { FC } from "react";
 import { ChatItem } from "./items/chat/chat-item";
 import { motion, AnimatePresence } from "framer-motion";
@@ -77,40 +69,6 @@ export const SidebarDataList: FC<SidebarDataListProps> = ({
               <div className="w-2 h-2 bg-gradient-to-r from-blue-400 to-cyan-400 rounded-full"></div>
               <span className="text-sm font-medium text-gray-800">
                 Prompt: {prompt.name}
-              </span>
-            </div>
-          </motion.div>
-        );
-      }
-      case "assistants": {
-        const assistant = item as Assistant;
-        return (
-          <motion.div
-            key={assistant.id}
-            className="p-3 hover:bg-white/50 rounded-lg cursor-pointer backdrop-blur-sm border border-white/20 transition-colors duration-200"
-            {...baseMotionProps}
-          >
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full"></div>
-              <span className="text-sm font-medium text-gray-800">
-                Assistant: {assistant.name}
-              </span>
-            </div>
-          </motion.div>
-        );
-      }
-      case "tools": {
-        const tool = item as Tool;
-        return (
-          <motion.div
-            key={tool._id}
-            className="p-3 hover:bg-white/50 rounded-lg cursor-pointer backdrop-blur-sm border border-white/20 transition-colors duration-200"
-            {...baseMotionProps}
-          >
-            <div className="flex items-center space-x-2">
-              <div className="w-2 h-2 bg-gradient-to-r from-orange-400 to-red-400 rounded-full"></div>
-              <span className="text-sm font-medium text-gray-800">
-                Tool: {tool.name}
               </span>
             </div>
           </motion.div>

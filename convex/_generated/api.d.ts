@@ -14,9 +14,7 @@ import type {
   FunctionReference,
 } from "convex/server";
 import type * as analyses from "../analyses.js";
-import type * as assistants from "../assistants.js";
 import type * as calculationSettings from "../calculationSettings.js";
-import type * as mentors from "../mentors.js";
 import type * as messages from "../messages.js";
 import type * as migrations from "../migrations.js";
 import type * as prompts from "../prompts.js";
@@ -32,9 +30,7 @@ import type * as settings from "../settings.js";
  */
 declare const fullApi: ApiFromModules<{
   analyses: typeof analyses;
-  assistants: typeof assistants;
   calculationSettings: typeof calculationSettings;
-  mentors: typeof mentors;
   messages: typeof messages;
   migrations: typeof migrations;
   prompts: typeof prompts;

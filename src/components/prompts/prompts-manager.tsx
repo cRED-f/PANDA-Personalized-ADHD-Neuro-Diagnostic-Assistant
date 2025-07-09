@@ -24,8 +24,6 @@ interface PromptData {
   content: string;
   targetModel?:
     | "main"
-    | "assistant"
-    | "mentor"
     | "calculate-1"
     | "calculate-2"
     | "calculate-3"
@@ -49,10 +47,7 @@ const PromptItem: FC<PromptItemProps> = ({ prompt, onEdit, onDelete }) => {
     switch (model) {
       case "main":
         return { background: "bg-blue-500", label: "Main Model" };
-      case "assistant":
-        return { background: "bg-purple-500", label: "Assistant" };
-      case "mentor":
-        return { background: "bg-orange-500", label: "Mentor" };
+
       case "calculate-1":
         return { background: "bg-green-500", label: "Calculation 1" };
       case "calculate-2":
@@ -163,8 +158,6 @@ interface PromptFormProps {
     content: string;
     targetModel?:
       | "main"
-      | "assistant"
-      | "mentor"
       | "calculate-1"
       | "calculate-2"
       | "calculate-3"
@@ -185,8 +178,6 @@ const PromptForm: FC<PromptFormProps> = ({
   const [content, setContent] = useState(prompt?.content || "");
   const [targetModel, setTargetModel] = useState<
     | "main"
-    | "assistant"
-    | "mentor"
     | "calculate-1"
     | "calculate-2"
     | "calculate-3"
@@ -230,8 +221,7 @@ const PromptForm: FC<PromptFormProps> = ({
           <div className="flex flex-wrap items-center gap-3">
             {[
               "main",
-              "assistant",
-              "mentor",
+
               "calculate-1",
               "calculate-2",
               "calculate-3",
@@ -244,14 +234,14 @@ const PromptForm: FC<PromptFormProps> = ({
                 onClick={() => setTargetModel(model as typeof targetModel)}
                 className={`flex items-center space-x-2 px-3 py-2 rounded-lg border transition-all duration-200 text-sm ${
                   targetModel === model
-                    ? `bg-${model === "main" ? "blue" : model === "assistant" ? "purple" : model === "mentor" ? "orange" : model === "single-model" ? "indigo" : "green"}-100 border-${model === "main" ? "blue" : model === "assistant" ? "purple" : model === "mentor" ? "orange" : model === "single-model" ? "indigo" : "green"}-300 text-${model === "main" ? "blue" : model === "assistant" ? "purple" : model === "mentor" ? "orange" : model === "single-model" ? "indigo" : "green"}-700`
+                    ? `bg-${model === "main" ? "blue" : model === "single-model" ? "indigo" : "green"}-100 border-${model === "main" ? "blue" : model === "single-model" ? "indigo" : "green"}-700`
                     : "bg-white/50 border-gray-200 text-gray-600 hover:bg-white/70"
                 }`}
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
                 <div
-                  className={`w-2 h-2 ${model === "main" ? "bg-blue-500" : model === "assistant" ? "bg-purple-500" : model === "mentor" ? "bg-orange-500" : "bg-green-500"} rounded-full`}
+                  className={`w-2 h-2 ${model === "main" ? "bg-blue-500" : "bg-green-500"} rounded-full`}
                 ></div>
                 <span className="font-medium">
                   {model.replace("-", " ").replace("calculate", "Calculation")}
@@ -328,8 +318,6 @@ export const PromptsManager: FC = () => {
       content: string;
       targetModel?:
         | "main"
-        | "assistant"
-        | "mentor"
         | "calculate-1"
         | "calculate-2"
         | "calculate-3"

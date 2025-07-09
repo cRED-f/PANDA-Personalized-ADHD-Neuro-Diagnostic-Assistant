@@ -20,14 +20,14 @@ export const SetupInstructions: FC<SetupInstructionsProps> = ({ show }) => {
         <span>
           Get your API key from{" "}
           <motion.a
-            href="https://openrouter.ai/keys"
+            href="https://platform.openai.com/api-keys"
             target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 underline inline-flex items-center gap-1 hover:text-blue-700 transition-colors"
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
           >
-            OpenRouter
+            OpenAI
             <IconExternalLink size={12} />
           </motion.a>
         </span>
@@ -35,22 +35,11 @@ export const SetupInstructions: FC<SetupInstructionsProps> = ({ show }) => {
     },
     {
       number: "2",
-      content: (
-        <span>
-          Update{" "}
-          <motion.code
-            className="bg-gradient-to-r from-yellow-100 to-orange-100 px-2 py-1 rounded font-mono text-xs border border-yellow-200"
-            whileHover={{ scale: 1.05 }}
-          >
-            .env.local
-          </motion.code>{" "}
-          with your key
-        </span>
-      ),
+      content: "Navigate to Settings in the sidebar and add your API key",
     },
     {
       number: "3",
-      content: "Restart the development server",
+      content: "Select your preferred AI model and start chatting",
     },
   ];
 
@@ -110,8 +99,7 @@ export const SetupInstructions: FC<SetupInstructionsProps> = ({ show }) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5, duration: 0.3 }}
           >
-            To enable AI responses, please add your OpenRouter API key to the
-            environment variables.
+            To enable AI responses, please add your AI API key in the settings.
           </motion.p>
 
           <motion.div
@@ -154,7 +142,9 @@ export const SetupInstructions: FC<SetupInstructionsProps> = ({ show }) => {
           >
             <div className="flex items-center space-x-2 text-xs text-yellow-600">
               <IconBrandOpenai size={14} />
-              <span>Powered by OpenRouter - Access to multiple AI models</span>
+              <span>
+                Powered by OpenAI - Advanced AI conversation capabilities
+              </span>
             </div>
           </motion.div>
         </motion.div>

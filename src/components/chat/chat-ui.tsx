@@ -5,9 +5,7 @@ import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import { ChatMessages } from "./chat-messages";
 import { ChatInput } from "./chat-input";
-import { useOpenRouter } from "@/hooks/useOpenRouter";
-import { useAssistantAnalysis } from "@/hooks/useAssistantAnalysis";
-import { useMentorAnalysis } from "@/hooks/useMentorAnalysis";
+import { useAI } from "@/hooks/useAI";
 import { SetupInstructions } from "@/components/setup-instructions";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -33,20 +31,14 @@ export const ChatUI: FC<ChatUIProps> = ({ chatId }) => {
   const updateChatTitle = useMutation(api.messages.updateChatTitle);
   // Get API settings from database
   const apiSettings = useQuery(api.settings.getApiSettings);
-  const apiKey = apiSettings?.apiKey; // Get assistant configuration and prompts
-  const assistantConfig = useQuery(api.assistants.getDefaultAssistant);
-  // Get mentor configuration and prompts
-  const mentorConfig = useQuery(api.mentors.getDefaultMentor);
+  const apiKey = apiSettings?.apiKey;
+  const provider = apiSettings?.provider || "OpenAI";
 
   const {
-    sendMessage: sendToOpenRouter,
-    isGenerating: isOpenRouterGenerating,
-    error: openRouterError,
-  } = useOpenRouter(apiKey);
-  const { analyzeConversation, isAnalyzing: isAssistantAnalyzing } =
-    useAssistantAnalysis(apiKey);
-  const { analyzeMentorInput, isAnalyzing: isMentorAnalyzing } =
-    useMentorAnalysis(apiKey);
+    sendMessage: sendToAI,
+    isGenerating: isAIGenerating,
+    error: aiError,
+  } = useAI(provider as "OpenAI" | "OpenRouter", apiKey);
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, []); // Calculate if this is the first message (no user/ai messages exist yet, excluding assistant messages)
@@ -59,13 +51,8 @@ export const ChatUI: FC<ChatUIProps> = ({ chatId }) => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
   const handleSendMessage = useCallback(
-    async (
-      content: string,
-      systemPrompt?: string,
-      assistantPrompt?: string,
-      mentorPrompt?: string
-    ) => {
-      if (!chatId || !content.trim() || isOpenRouterGenerating) return;
+    async (content: string, systemPrompt?: string) => {
+      if (!chatId || !content.trim() || isAIGenerating) return;
 
       try {
         // Check if this is the first message in the chat
@@ -86,9 +73,8 @@ export const ChatUI: FC<ChatUIProps> = ({ chatId }) => {
             title,
           });
         } // Prepare conversation history - only user and ai messages for main AI model
-        // Exclude assistant messages as they are analysis/suggestions, not part of main conversation
         const conversationHistory = (messages || [])
-          .filter((msg) => msg.role !== "system" && msg.role !== "assistant") // Exclude system and assistant messages
+          .filter((msg) => msg.role !== "system") // Exclude system messages
           .map((msg) => ({
             role: msg.role as "user" | "ai",
             content: msg.content,
@@ -98,205 +84,34 @@ export const ChatUI: FC<ChatUIProps> = ({ chatId }) => {
         conversationHistory.push({
           role: "user" as const,
           content,
-        }); // Check if we should run assistant analysis
-        let assistantAnalysis = "";
-        const shouldRunAssistantAnalysis =
-          assistantConfig?.isDefault && assistantPrompt;
-
-        if (shouldRunAssistantAnalysis) {
-          // Calculate total exchanges based on user+ai pairs (excluding assistant messages)
-          const userAiMessages = (messages || []).filter(
-            (msg) => msg.role === "user" || msg.role === "ai"
-          );
-          const totalExchanges = Math.floor((userAiMessages.length + 1) / 2); // +1 for current user message          // Check if we should trigger analysis based on configuration
-          const shouldTrigger =
-            totalExchanges === 10 || // First activation after 10 exchanges
-            (totalExchanges > 10 &&
-              (totalExchanges - 10) %
-                (assistantConfig.activeAfterQuestions || 3) ===
-                0); // Then every N exchanges based on setting
-
-          console.log("🤖 Assistant Analysis Check:", {
-            totalExchanges,
-            shouldTrigger,
-            activeAfterQuestions: assistantConfig.activeAfterQuestions,
-            hasAssistantPrompt: !!assistantPrompt,
-            assistantConfigDefault: assistantConfig.isDefault,
-          });
-
-          if (shouldTrigger) {
-            console.log("🔍 Triggering assistant analysis...");
-
-            try {
-              const analysis = await analyzeConversation(
-                conversationHistory,
-                assistantPrompt,
-                {
-                  modelName: assistantConfig.modelName,
-                  temperature: assistantConfig.temperature,
-                }
-              );
-              if (analysis) {
-                assistantAnalysis = analysis;
-                console.log(
-                  "✅ Assistant analysis completed:",
-                  analysis.substring(0, 100) + "..."
-                );
-
-                // Save assistant analysis as a separate message with role "assistant"
-                await sendMessage({
-                  chatId,
-                  content: analysis,
-                  role: "assistant",
-                });
-              } else {
-                console.warn("⚠️ Assistant analysis returned empty result");
-              }
-            } catch (error) {
-              console.error("❌ Assistant analysis failed:", error);
-              // Continue without analysis if it fails
-            }
-          }
-        }
-
-        // Check if we should run mentor analysis
-        let mentorAnalysis = "";
-        const shouldRunMentorAnalysis = mentorConfig?.isDefault && mentorPrompt;
-
-        if (shouldRunMentorAnalysis) {
-          // Calculate total exchanges based on user+ai pairs (excluding assistant and mentor messages)
-          const userAiMessages = (messages || []).filter(
-            (msg) => msg.role === "user" || msg.role === "ai"
-          );
-          const totalExchanges = Math.floor((userAiMessages.length + 1) / 2); // +1 for current user message          // Mentor activates initially after 6 exchanges, then based on activeAfterQuestions
-          const shouldTrigger =
-            totalExchanges === 6 || // First activation after 6 exchanges
-            (totalExchanges > 6 &&
-              (totalExchanges - 6) %
-                (mentorConfig.activeAfterQuestions || 3) ===
-                0); // Then every N exchanges based on setting
-
-          console.log("🧭 Mentor Analysis Check:", {
-            totalExchanges,
-            shouldTrigger,
-            activeAfterQuestions: mentorConfig.activeAfterQuestions,
-            hasMentorPrompt: !!mentorPrompt,
-            mentorConfigDefault: mentorConfig.isDefault,
-          });
-          if (shouldTrigger) {
-            console.log("🧭 Triggering mentor analysis...");
-
-            try {
-              // Prepare conversation history for mentor (including the new user message)
-              const mentorConversationHistory = [
-                ...conversationHistory.map((msg) => ({
-                  role: msg.role,
-                  content: msg.content,
-                  timestamp: Date.now(), // We don't have original timestamps, use current
-                })),
-              ];
-
-              const analysis = await analyzeMentorInput(
-                mentorConversationHistory, // Send full conversation history to mentor
-                mentorPrompt,
-                {
-                  modelName: mentorConfig.modelName,
-                  temperature: mentorConfig.temperature,
-                }
-              );
-              if (analysis) {
-                mentorAnalysis = analysis;
-                console.log(
-                  "✅ Mentor analysis completed:",
-                  analysis.substring(0, 100) + "..."
-                );
-
-                // Save mentor analysis as a separate message with role "mentor"
-                await sendMessage({
-                  chatId,
-                  content: analysis,
-                  role: "mentor",
-                });
-              } else {
-                console.warn("⚠️ Mentor analysis returned empty result");
-              }
-            } catch (error) {
-              console.error("❌ Mentor analysis failed:", error);
-              // Continue without analysis if it fails
-            }
-          }
-        }
-
-        // Prepare enhanced system prompt with assistant and mentor analysis
-        let enhancedSystemPrompt = systemPrompt || "";
-
-        // Add assistant analysis first (if available)
-        if (assistantAnalysis) {
-          enhancedSystemPrompt = `${systemPrompt || ""}
-
-ASSISTANT ANALYSIS (PRIORITY EXECUTION):
-${assistantAnalysis}`;
-        }
-
-        // Add mentor analysis second (if available)
-        if (mentorAnalysis) {
-          enhancedSystemPrompt = `${enhancedSystemPrompt}
-
-MENTOR GUIDANCE:
-${mentorAnalysis}`;
-        }
-
-        // Add instruction if we have any analysis
-        if (assistantAnalysis || mentorAnalysis) {
-          enhancedSystemPrompt += `
-
-Please incorporate this guidance into your response while maintaining your natural conversation style.`;
-          console.log("🎯 Enhanced system prompt with analysis");
-        }
-
-        // Prepare conversation history for main model - exclude assistant and mentor messages
-        const mainConversationHistory = (messages || [])
-          .filter(
-            (msg) =>
-              msg.role !== "system" &&
-              msg.role !== "assistant" &&
-              msg.role !== "mentor"
-          ) // Exclude system, assistant, and mentor messages
-          .map((msg) => ({
-            role: msg.role as "user" | "ai",
-            content: msg.content,
-          }));
-
-        // Add the new user message to conversation history
-        mainConversationHistory.push({
-          role: "user" as const,
-          content,
         });
 
         // Prepare API messages in the specified order:
-        // 1. Assistant analysis, 2. Mentor analysis, 3. Main prompt, 4. Conversation history, 5. User input
-        const apiMessages = []; // Always add system prompt first if provided
-        if (enhancedSystemPrompt) {
+        // 1. System prompt (if provided), 2. Conversation history, 3. User input
+        const apiMessages = [];
+
+        // Always add system prompt first if provided
+        if (systemPrompt) {
           apiMessages.push({
             role: "system" as const,
-            content: enhancedSystemPrompt,
+            content: systemPrompt,
           });
         }
 
-        // Add conversation history - map 'ai' to 'assistant' for OpenRouter
+        // Add conversation history - map 'ai' to 'assistant' for both APIs
         apiMessages.push(
-          ...mainConversationHistory.map((msg) => ({
+          ...conversationHistory.map((msg) => ({
             role: msg.role === "ai" ? ("assistant" as const) : msg.role,
             content: msg.content,
           }))
-        ); // Get AI response from OpenRouter
+        ); // Get AI response
         console.log(
-          "🚀 Sending to OpenRouter with messages:",
+          `🚀 Sending to ${provider} with messages:`,
           apiMessages.length,
           "messages"
         );
-        if (apiKey && sendToOpenRouter && apiSettings?.modelName) {
-          const aiResponse = await sendToOpenRouter(apiMessages, {
+        if (apiKey && sendToAI && apiSettings?.modelName) {
+          const aiResponse = await sendToAI(apiMessages, {
             model: apiSettings.modelName,
             temperature: apiSettings?.temperature ?? 0.0,
           });
@@ -308,11 +123,11 @@ Please incorporate this guidance into your response while maintaining your natur
               role: "ai",
             });
           } else {
-            // Fallback response if OpenRouter fails
+            // Fallback response if AI fails
             await sendMessage({
               chatId,
               content:
-                openRouterError ||
+                aiError ||
                 "Sorry, I encountered an error processing your request. Please try again.",
               role: "ai",
             });
@@ -322,7 +137,7 @@ Please incorporate this guidance into your response while maintaining your natur
           let errorMessage = "Configuration required to enable AI responses: ";
           const missingItems = [];
 
-          if (!apiKey) missingItems.push("OpenRouter API key");
+          if (!apiKey) missingItems.push(`${provider} API key`);
           if (!apiSettings?.modelName) missingItems.push("Model name");
 
           errorMessage += missingItems.join(" and ");
@@ -351,13 +166,10 @@ Please incorporate this guidance into your response while maintaining your natur
       messages,
       apiKey,
       apiSettings,
-      sendToOpenRouter,
-      openRouterError,
-      isOpenRouterGenerating,
-      assistantConfig,
-      analyzeConversation,
-      mentorConfig,
-      analyzeMentorInput,
+      sendToAI,
+      aiError,
+      isAIGenerating,
+      provider,
     ]
   );
 
@@ -503,17 +315,17 @@ Please incorporate this guidance into your response while maintaining your natur
             {" "}
             <ChatMessages
               messages={(messages || [])
-                .filter((msg) => msg.role !== "system") // Hide system messages from UI, but show assistant and mentor
+                .filter((msg) => msg.role !== "system") // Hide system messages from UI
                 .map((msg) => ({
                   _id: msg._id,
                   content: msg.content,
-                  role: msg.role as "user" | "ai" | "assistant" | "mentor",
+                  role: msg.role as "user" | "ai",
                   timestamp: msg.timestamp,
                   chatId: msg.chatId,
                 }))}
               onEditMessage={handleEditMessage}
               onRegenerateMessage={handleRegenerateMessage}
-              isGenerating={isOpenRouterGenerating}
+              isGenerating={isAIGenerating}
             />
           </AnimatePresence>
         </div>
@@ -530,9 +342,7 @@ Please incorporate this guidance into your response while maintaining your natur
         {" "}
         <ChatInput
           onSendMessage={handleSendMessage}
-          isGenerating={isOpenRouterGenerating}
-          isAssistantAnalyzing={isAssistantAnalyzing}
-          isMentorAnalyzing={isMentorAnalyzing}
+          isGenerating={isAIGenerating}
           isFirstMessage={isFirstMessage}
           onStopGeneration={handleStopGeneration}
         />

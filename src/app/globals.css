@@ -47,6 +47,16 @@ body {
   background: #9ca3af;
 }
 
+/* Hide scrollbar utility class */
+.scrollbar-hide {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
 /* Smooth transitions */
 * {
   transition:
