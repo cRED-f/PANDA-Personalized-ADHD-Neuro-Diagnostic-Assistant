@@ -1,5 +1,17 @@
 import { OpenAIMessage, OpenAIRequest, OpenAIResponse } from "./openai";
 
+export interface VoiceTranscriptionResult {
+  text: string;
+  confidence?: number;
+  language?: string;
+  duration?: number;
+}
+
+export interface VoiceGenerationResult {
+  audioUrl: string;
+  duration?: number;
+}
+
 export class OpenAIService {
   private apiKey: string;
   private baseUrl: string;
@@ -192,5 +204,175 @@ export class OpenAIService {
       console.error("OpenAI Streaming Error:", error);
       throw error;
     }
+  }
+
+  /**
+   * Convert speech to text using OpenAI Whisper
+   */
+  async speechToText(
+    audioFile: File,
+    options: {
+      model?: string;
+      language?: string;
+      prompt?: string;
+      temperature?: number;
+    } = {}
+  ): Promise<VoiceTranscriptionResult> {
+    const {
+      model = "whisper-1",
+      language = "en",
+      prompt,
+      temperature = 0,
+    } = options;
+
+    const formData = new FormData();
+    formData.append("file", audioFile);
+    formData.append("model", model);
+    formData.append("language", language);
+    formData.append("response_format", "verbose_json");
+    formData.append("temperature", temperature.toString());
+
+    if (prompt) {
+      formData.append("prompt", prompt);
+    }
+
+    console.log("🎤 Sending audio to OpenAI Whisper:", {
+      model,
+      language,
+      fileSize: audioFile.size,
+      fileName: audioFile.name,
+    });
+
+    try {
+      const response = await fetch(`${this.baseUrl}/audio/transcriptions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("OpenAI Whisper Error Response:", errorText);
+        throw new Error(
+          `OpenAI Whisper API error: ${response.status} ${errorText}`
+        );
+      }
+
+      const data = await response.json();
+
+      console.log("✅ OpenAI Whisper Response:", {
+        text: data.text?.substring(0, 100) + "...",
+        language: data.language,
+        duration: data.duration,
+      });
+
+      return {
+        text: data.text,
+        confidence: data.confidence,
+        language: data.language,
+        duration: data.duration,
+      };
+    } catch (error) {
+      console.error("OpenAI Whisper Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Convert text to speech using OpenAI TTS
+   */
+  async textToSpeech(
+    text: string,
+    options: {
+      model?: string;
+      voice?: string;
+      response_format?: string;
+      speed?: number;
+    } = {}
+  ): Promise<VoiceGenerationResult> {
+    const {
+      model = "tts-1",
+      voice = "alloy",
+      response_format = "mp3",
+      speed = 1.0,
+    } = options;
+
+    console.log("🔊 Sending text to OpenAI TTS:", {
+      model,
+      voice,
+      textLength: text.length,
+      speed,
+    });
+
+    try {
+      const response = await fetch(`${this.baseUrl}/audio/speech`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          input: text,
+          voice,
+          response_format,
+          speed,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error("OpenAI TTS Error Response:", errorText);
+        throw new Error(
+          `OpenAI TTS API error: ${response.status} ${errorText}`
+        );
+      }
+
+      // Get audio as blob
+      const audioBlob = await response.blob();
+
+      // Create object URL for the audio
+      const audioUrl = URL.createObjectURL(audioBlob);
+
+      console.log("✅ OpenAI TTS Response:", {
+        audioSize: audioBlob.size,
+        audioType: audioBlob.type,
+      });
+
+      return {
+        audioUrl,
+        duration: undefined, // Duration would need to be calculated separately
+      };
+    } catch (error) {
+      console.error("OpenAI TTS Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create a psychiatrist-focused system prompt
+   */
+  createPsychiatristPrompt(): string {
+    return `You are a compassionate AI psychiatrist assistant specializing in ADHD support and mental health guidance. Your role is to:
+
+1. Listen actively and empathetically to the user's concerns
+2. Provide supportive, non-judgmental responses
+3. Offer practical strategies for managing ADHD symptoms
+4. Suggest coping mechanisms and self-care practices
+5. Encourage professional help when appropriate
+6. Maintain appropriate boundaries as an AI assistant
+
+Guidelines:
+- Always be warm, understanding, and supportive
+- Use simple, clear language
+- Ask clarifying questions to better understand their situation
+- Provide actionable advice when appropriate
+- Remember you are not a replacement for professional therapy
+- Keep responses conversational and relatively brief (2-3 sentences typically)
+- Focus on ADHD-related challenges, emotional support, and practical strategies
+
+Remember: You're here to support and guide, not to diagnose or provide medical advice.`;
   }
 }

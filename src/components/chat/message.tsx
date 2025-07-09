@@ -17,7 +17,9 @@ import { motion } from "framer-motion";
 interface MessageProps {
   message: ChatMessage;
   onEdit?: (messageId: string) => void;
+  onRegenerate?: (messageId: string) => void;
   index?: number;
+  isLast?: boolean;
 }
 
 export const Message: FC<MessageProps> = ({ message, onEdit }) => {

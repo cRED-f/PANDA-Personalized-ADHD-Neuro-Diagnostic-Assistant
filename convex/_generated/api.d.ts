@@ -15,10 +15,12 @@ import type {
 } from "convex/server";
 import type * as analyses from "../analyses.js";
 import type * as calculationSettings from "../calculationSettings.js";
+import type * as debug from "../debug.js";
 import type * as messages from "../messages.js";
 import type * as migrations from "../migrations.js";
 import type * as prompts from "../prompts.js";
 import type * as settings from "../settings.js";
+import type * as voiceSessions from "../voiceSessions.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -31,10 +33,12 @@ import type * as settings from "../settings.js";
 declare const fullApi: ApiFromModules<{
   analyses: typeof analyses;
   calculationSettings: typeof calculationSettings;
+  debug: typeof debug;
   messages: typeof messages;
   migrations: typeof migrations;
   prompts: typeof prompts;
   settings: typeof settings;
+  voiceSessions: typeof voiceSessions;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

@@ -7,6 +7,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { useMutation } from "convex/react";
 import { api } from "../../../../../convex/_generated/api";
+import { Id } from "../../../../../convex/_generated/dataModel";
 import { useChatContext } from "@/contexts/chat-context";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -25,7 +26,7 @@ export const ChatItem: FC<ChatItemProps> = ({ chat }) => {
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    await deleteChat({ chatId: chat._id });
+    await deleteChat({ chatId: chat._id as Id<"chats"> });
   };
 
   const handleEdit = (e: React.MouseEvent) => {

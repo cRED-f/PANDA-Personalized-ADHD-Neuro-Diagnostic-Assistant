@@ -296,7 +296,19 @@ export const PromptsManager: FC = () => {
   const [editingPrompt, setEditingPrompt] = useState<PromptData | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  const prompts = useQuery(api.prompts.getPrompts) || [];
+  const allPrompts = useQuery(api.prompts.getPrompts) || [];
+  const prompts = allPrompts.filter(
+    (prompt) =>
+      !prompt.targetModel ||
+      [
+        "main",
+        "calculate-1",
+        "calculate-2",
+        "calculate-3",
+        "calculate-4",
+        "single-model",
+      ].includes(prompt.targetModel)
+  ) as PromptData[];
   const createPrompt = useMutation(api.prompts.createPrompt);
   const updatePrompt = useMutation(api.prompts.updatePrompt);
   const deletePrompt = useMutation(api.prompts.deletePrompt);
