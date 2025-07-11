@@ -34,64 +34,64 @@ export const SidebarSwitcher: FC<SidebarSwitcherProps> = ({
             contentType="chats"
             onContentTypeChange={onContentTypeChange}
             tooltip="Chats"
-            color="from-blue-500 to-blue-600"
-            hoverColor="hover:from-blue-600 hover:to-blue-700"
+            color="from-blue-500 to-cyan-600"
+            hoverColor="hover:from-blue-600 hover:to-cyan-700"
           />
           <SidebarSwitchItem
             icon={<IconMicrophone size={20} />}
-            contentType="voice-assistant"
+            contentType="voice-chats"
             onContentTypeChange={onContentTypeChange}
-            tooltip="Voice Assistant"
-            color="from-purple-500 to-purple-600"
-            hoverColor="hover:from-purple-600 hover:to-purple-700"
+            tooltip="Voice Chats"
+            color="from-purple-500 to-pink-600"
+            hoverColor="hover:from-purple-600 hover:to-pink-700"
           />
           <SidebarSwitchItem
             icon={<IconSparkles size={20} />}
             contentType="presets"
             onContentTypeChange={onContentTypeChange}
             tooltip="Presets"
-            color="from-pink-500 to-pink-600"
-            hoverColor="hover:from-pink-600 hover:to-pink-700"
+            color="from-pink-500 to-rose-600"
+            hoverColor="hover:from-pink-600 hover:to-rose-700"
           />
           <SidebarSwitchItem
             icon={<IconPencil size={20} />}
             contentType="prompts"
             onContentTypeChange={onContentTypeChange}
             tooltip="Prompts"
-            color="from-green-500 to-green-600"
-            hoverColor="hover:from-green-600 hover:to-green-700"
+            color="from-green-500 to-emerald-600"
+            hoverColor="hover:from-green-600 hover:to-emerald-700"
           />
           <SidebarSwitchItem
             icon={<IconCalculator size={20} />}
             contentType="calculate-score"
             onContentTypeChange={onContentTypeChange}
             tooltip="Calculate Score"
-            color="from-orange-500 to-orange-600"
-            hoverColor="hover:from-orange-600 hover:to-orange-700"
+            color="from-orange-500 to-amber-600"
+            hoverColor="hover:from-orange-600 hover:to-amber-700"
           />
           <SidebarSwitchItem
             icon={<IconAdjustments size={20} />}
             contentType="calculation-settings"
             onContentTypeChange={onContentTypeChange}
             tooltip="Calculation Settings"
-            color="from-teal-500 to-teal-600"
-            hoverColor="hover:from-teal-600 hover:to-teal-700"
+            color="from-teal-500 to-cyan-600"
+            hoverColor="hover:from-teal-600 hover:to-cyan-700"
           />
           <SidebarSwitchItem
             icon={<IconDownload size={20} />}
             contentType="import-export"
             onContentTypeChange={onContentTypeChange}
             tooltip="Import/Export"
-            color="from-indigo-500 to-indigo-600"
-            hoverColor="hover:from-indigo-600 hover:to-indigo-700"
+            color="from-indigo-500 to-purple-600"
+            hoverColor="hover:from-indigo-600 hover:to-purple-700"
           />
           <SidebarSwitchItem
             icon={<IconSettings size={20} />}
             contentType="settings"
             onContentTypeChange={onContentTypeChange}
             tooltip="Settings"
-            color="from-gray-500 to-gray-600"
-            hoverColor="hover:from-gray-600 hover:to-gray-700"
+            color="from-slate-500 to-gray-600"
+            hoverColor="hover:from-slate-600 hover:to-gray-700"
           />
         </TabsList>
       </div>
@@ -128,19 +128,19 @@ const SidebarSwitchItem: FC<SidebarSwitchItemProps> = ({
           transition={{ type: "spring", stiffness: 400, damping: 17 }}
         >
           <TabsTrigger
-            className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-xl transition-all duration-300 border border-white/20 hover:border-white/40 relative overflow-hidden group"
+            className="flex h-12 w-12 cursor-pointer items-center justify-center rounded-xl transition-all duration-300 border-2 border-white/40 hover:border-white/60 group-data-[state=active]:border-white/80 relative overflow-hidden group shadow-lg hover:shadow-xl"
             value={contentType}
             onClick={() => onContentTypeChange(contentType)}
           >
             <div
-              className={`absolute inset-0 bg-gradient-to-br ${color} opacity-20 group-hover:opacity-30 group-data-[state=active]:opacity-40 transition-opacity duration-300`}
+              className={`absolute inset-0 bg-gradient-to-br ${color} opacity-50 group-hover:opacity-70 group-data-[state=active]:opacity-80 transition-opacity duration-300`}
             />
             <div
-              className={`absolute inset-0 bg-gradient-to-br ${hoverColor} opacity-0 group-hover:opacity-10 transition-opacity duration-300`}
+              className={`absolute inset-0 bg-gradient-to-br ${hoverColor} opacity-0 group-hover:opacity-30 transition-opacity duration-300`}
             />
             <motion.div
-              className="relative z-10 text-white"
-              whileHover={{ rotate: 5 }}
+              className="relative z-10 text-white drop-shadow-2xl filter brightness-110"
+              whileHover={{ rotate: 5, scale: 1.1 }}
               transition={{ type: "spring", stiffness: 300 }}
             >
               {icon}

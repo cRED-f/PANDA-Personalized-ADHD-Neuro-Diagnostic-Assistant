@@ -7,7 +7,8 @@ export type ContentType =
   | "calculate-score"
   | "calculation-settings"
   | "import-export"
-  | "voice-assistant";
+  | "voice-assistant"
+  | "voice-chats"; // Add voice-chats content type
 
 export interface ChatMessage {
   _id: string;
@@ -120,4 +121,34 @@ export interface ApiSettings {
   provider: string;
   createdAt: number;
   updatedAt: number;
+}
+
+export interface VoiceChat {
+  _id: string;
+  title: string;
+  sessionId: string;
+  status: "active" | "paused" | "completed";
+  startTime: number;
+  endTime?: number;
+  totalMessages: number;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface VoiceMessage {
+  _id: string;
+  sessionId: string;
+  messageId: string;
+  role: "user" | "assistant";
+  content: string;
+  audioUrl?: string;
+  transcription?: string;
+  timestamp: number;
+  duration?: number;
+  metadata?: {
+    confidence?: number;
+    language?: string;
+    emotion?: string;
+    processingTime?: number;
+  };
 }

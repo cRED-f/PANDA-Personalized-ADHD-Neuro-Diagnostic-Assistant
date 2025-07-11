@@ -26,7 +26,7 @@ export interface ChainedVoiceAssistantState {
 }
 
 export interface ChainedVoiceAssistantActions {
-  startSession: () => Promise<void>;
+  startSession: (existingSessionId?: string) => Promise<void>;
   endSession: () => Promise<void>;
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<void>;
@@ -45,9 +45,6 @@ export const useChainedVoiceAssistant = (): ChainedVoiceAssistantState &
     currentSessionId: null,
   });
 
-  const [currentSessionStringId, setCurrentSessionStringId] = useState<
-    string | null
-  >(null);
   const currentSessionIdRef = useRef<string | null>(null);
   const voiceAssistantRef = useRef<ChainedVoiceAssistant | null>(null);
 
@@ -88,7 +85,13 @@ export const useChainedVoiceAssistant = (): ChainedVoiceAssistantState &
         }
       },
 
-      onResponse: (text: string) => {
+      onResponse: () => {
+        // Don't update state or save to DB yet - wait for onResponseComplete
+        // This event can be used for internal processing if needed
+      },
+
+      onResponseComplete: (text: string) => {
+        // Now update state and save to DB after audio has finished playing
         setState((prev) => ({ ...prev, response: text }));
 
         if (currentSessionIdRef.current) {
@@ -158,65 +161,71 @@ export const useChainedVoiceAssistant = (): ChainedVoiceAssistantState &
   }, [convex]);
 
   // Stable function to start session
-  const startSession = useCallback(async () => {
-    try {
-      if (state.isSessionActive) {
-        return;
+  const startSession = useCallback(
+    async (existingSessionId?: string) => {
+      try {
+        if (state.isSessionActive) {
+          return;
+        }
+
+        if (!settings?.apiKey) {
+          throw new Error("No API key found. Please configure your settings.");
+        }
+
+        let sessionId = existingSessionId;
+
+        if (!sessionId) {
+          // Create a unique session ID
+          sessionId = `voice_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+          // Create a voice chat for this session
+          await createVoiceChat({
+            title: `Voice Chat ${new Date().toLocaleString()}`,
+            sessionId: sessionId,
+          });
+        }
+
+        currentSessionIdRef.current = sessionId;
+
+        // Create voice assistant config
+        const config: ChainedVoiceConfig = {
+          apiKey: settings.apiKey,
+          model: settings.modelName || "gpt-4.1",
+          temperature: settings.temperature || 0.7,
+          getConversationHistory,
+        };
+
+        // Create voice assistant instance
+        voiceAssistantRef.current = new ChainedVoiceAssistant(
+          config,
+          eventsHandler
+        );
+
+        setState((prev) => ({
+          ...prev,
+          isSessionActive: true,
+          error: null,
+          status: "idle",
+          currentSessionId: sessionId,
+        }));
+      } catch (error) {
+        console.error("Failed to start voice session:", error);
+        setState((prev) => ({
+          ...prev,
+          error:
+            error instanceof Error ? error.message : "Failed to start session",
+          status: "error",
+        }));
       }
-
-      if (!settings?.apiKey) {
-        throw new Error("No API key found. Please configure your settings.");
-      }
-
-      // Create a unique session ID
-      const sessionId = `voice_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-
-      // Create a voice chat for this session
-      await createVoiceChat({
-        title: `Voice Chat ${new Date().toLocaleString()}`,
-        sessionId: sessionId,
-      });
-
-      setCurrentSessionStringId(sessionId);
-      currentSessionIdRef.current = sessionId;
-
-      // Create voice assistant config
-      const config: ChainedVoiceConfig = {
-        apiKey: settings.apiKey,
-        model: settings.modelName || "gpt-4.1",
-        temperature: settings.temperature || 0.7,
-        getConversationHistory,
-      };
-
-      // Create voice assistant instance
-      voiceAssistantRef.current = new ChainedVoiceAssistant(
-        config,
-        eventsHandler
-      );
-
-      setState((prev) => ({
-        ...prev,
-        isSessionActive: true,
-        error: null,
-        status: "idle",
-        currentSessionId: sessionId,
-      }));
-    } catch (error) {
-      console.error("Failed to start voice session:", error);
-      setState((prev) => ({
-        ...prev,
-        error:
-          error instanceof Error ? error.message : "Failed to start session",
-        status: "error",
-      }));
-    }
-  }, [
-    state.isSessionActive,
-    settings,
-    getConversationHistory,
-    eventsHandler,
-    createVoiceChat,
-  ]);
+    },
+    [
+      state.isSessionActive,
+      settings,
+      getConversationHistory,
+      eventsHandler,
+      createVoiceChat,
+    ]
+  );
 
   // Stable function to end session
   const endSession = useCallback(async () => {
@@ -226,7 +235,6 @@ export const useChainedVoiceAssistant = (): ChainedVoiceAssistantState &
         voiceAssistantRef.current = null;
       }
 
-      setCurrentSessionStringId(null);
       currentSessionIdRef.current = null;
 
       setState((prev) => ({

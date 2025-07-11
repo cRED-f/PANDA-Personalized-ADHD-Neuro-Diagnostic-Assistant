@@ -23,6 +23,11 @@ function HomeContent() {
   const [selectedCalculationChatId, setSelectedCalculationChatId] = useState<
     string | null
   >(null);
+  const [selectedCalculationSessionId, setSelectedCalculationSessionId] =
+    useState<string | null>(null);
+  const [selectedVoiceChatSessionId, setSelectedVoiceChatSessionId] = useState<
+    string | null
+  >(null);
 
   const chats = useQuery(api.messages.getChats);
 
@@ -31,14 +36,37 @@ function HomeContent() {
       case "calculate-score":
       case "calculation-settings":
         return (
-          <CalculationInterface selectedChatId={selectedCalculationChatId} />
+          <CalculationInterface
+            selectedChatId={selectedCalculationChatId}
+            selectedSessionId={selectedCalculationSessionId}
+          />
         );
+      case "voice-chats":
+        if (selectedVoiceChatSessionId) {
+          return (
+            <div className="h-full">
+              <VoiceAssistantModal
+                isOpen={true}
+                onClose={() => {
+                  setSelectedVoiceChatSessionId(null);
+                  setCurrentContentType("voice-chats");
+                  setSidebarVisible(true); // Show sidebar when closing voice assistant
+                }}
+                existingSessionId={selectedVoiceChatSessionId}
+              />
+            </div>
+          );
+        }
+        return <ChatUI chatId={currentChatId} />;
       case "voice-assistant":
         return (
           <div className="h-full">
             <VoiceAssistantModal
               isOpen={true}
-              onClose={() => setCurrentContentType("chats")}
+              onClose={() => {
+                setCurrentContentType("chats");
+                setSidebarVisible(true); // Show sidebar when closing voice assistant
+              }}
             />
           </div>
         );
@@ -51,6 +79,32 @@ function HomeContent() {
     const chatId = await createChat({ title: "New Chat" });
     setCurrentChatId(chatId);
   }, [createChat, setCurrentChatId]);
+
+  const handleNewVoiceChat = useCallback(() => {
+    setCurrentContentType("voice-assistant");
+    setSelectedVoiceChatSessionId(null); // Start fresh voice chat
+    setSidebarVisible(false); // Hide sidebar when opening voice assistant
+  }, []);
+
+  const handleSelectVoiceChat = useCallback((sessionId: string) => {
+    setSelectedVoiceChatSessionId(sessionId);
+    setCurrentContentType("voice-chats");
+    setSidebarVisible(false); // Hide sidebar when resuming voice chat
+  }, []);
+
+  // Handler for calculation chat selection - clears voice session selection
+  const handleSelectCalculationChat = useCallback((chatId: string) => {
+    setSelectedCalculationChatId(chatId);
+    setSelectedCalculationSessionId(null); // Clear voice session when text chat is selected
+    setCurrentContentType("calculate-score");
+  }, []);
+
+  // Handler for calculation voice session selection - clears text chat selection
+  const handleSelectCalculationSession = useCallback((sessionId: string) => {
+    setSelectedCalculationSessionId(sessionId);
+    setSelectedCalculationChatId(null); // Clear text chat when voice session is selected
+    setCurrentContentType("calculate-score");
+  }, []);
 
   // Set current chat to first available chat if none is selected and chats exist
   // Also validate that saved chat ID still exists
@@ -137,9 +191,12 @@ function HomeContent() {
             contentType={currentContentType}
             showSidebar={sidebarVisible}
             onCreateChat={handleNewChat}
+            onCreateVoiceChat={handleNewVoiceChat}
             onToggleSidebar={() => setSidebarVisible(!sidebarVisible)}
             onContentTypeChange={setCurrentContentType}
-            onSelectCalculationChat={setSelectedCalculationChatId}
+            onSelectCalculationChat={handleSelectCalculationChat}
+            onSelectCalculationSession={handleSelectCalculationSession}
+            onSelectVoiceChat={handleSelectVoiceChat}
           />
         </div>
       </motion.div>
@@ -148,7 +205,7 @@ function HomeContent() {
       <AnimatePresence>
         {!sidebarVisible && (
           <motion.div
-            className="fixed left-4 top-1/2 transform -translate-y-1/2 z-50"
+            className="fixed left-4 top-4 z-50"
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
@@ -180,7 +237,15 @@ function HomeContent() {
 
       {/* Main Chat Area - Full width with padding for sidebar */}
       <motion.div
-        className="h-full flex flex-col"
+        className={`h-full flex flex-col ${
+          sidebarVisible &&
+          (currentContentType === "calculate-score" ||
+            currentContentType === "calculation-settings")
+            ? "ml-[400px]"
+            : sidebarVisible && currentContentType !== "voice-assistant"
+              ? "ml-80"
+              : ""
+        }`}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7, delay: 0.4, ease: "easeOut" }}

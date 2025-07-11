@@ -2,7 +2,7 @@
 
 import { FC, useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { IconX, IconArrowLeft, IconMicrophone } from "@tabler/icons-react";
+import { IconX, IconMicrophone } from "@tabler/icons-react";
 import { useChainedVoiceAssistant } from "../../hooks/useChainedVoiceAssistant";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
@@ -10,11 +10,13 @@ import { api } from "../../../convex/_generated/api";
 interface VoiceAssistantViewProps {
   onBack?: () => void;
   onClose?: () => void;
+  existingSessionId?: string;
 }
 
 export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
   onBack,
   onClose,
+  existingSessionId,
 }) => {
   const [userClosed, setUserClosed] = useState(false);
   const [isButtonPressed, setIsButtonPressed] = useState(false);
@@ -62,9 +64,16 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
   // Stable function references to prevent useEffect loops
   const stableStartSession = useCallback(() => {
     if (!isLoadingSettings && !isSessionActive && !error && !userClosed) {
-      startSession().catch(console.error);
+      startSession(existingSessionId).catch(console.error);
     }
-  }, [isLoadingSettings, isSessionActive, error, userClosed, startSession]);
+  }, [
+    isLoadingSettings,
+    isSessionActive,
+    error,
+    userClosed,
+    startSession,
+    existingSessionId,
+  ]);
 
   // Auto-start session when component mounts and settings are loaded
   useEffect(() => {
@@ -156,10 +165,7 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
           className="flex items-center gap-2 text-blue-200 hover:text-white transition-colors duration-200 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/20"
           whileHover={{ scale: 1.05, x: -2 }}
           whileTap={{ scale: 0.95 }}
-        >
-          <IconArrowLeft size={20} />
-          <span className="text-sm font-medium">Back</span>
-        </motion.button>
+        ></motion.button>
 
         {/* Title */}
         <motion.div

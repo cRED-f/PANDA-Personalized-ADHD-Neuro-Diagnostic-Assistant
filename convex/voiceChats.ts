@@ -167,3 +167,193 @@ export const deleteVoiceChat = mutation({
     return { success: true };
   },
 });
+
+// Voice Analysis Operations (similar to text analysis)
+
+// Save voice chat analysis
+export const saveVoiceAnalysis = mutation({
+  args: {
+    sessionId: v.string(),
+    promptId: v.string(),
+    promptName: v.string(),
+    promptContent: v.string(),
+    modelName: v.string(),
+    temperature: v.number(),
+    result: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    // Check if analysis already exists for this session/model
+    const existing = await ctx.db
+      .query("voiceChatAnalyses")
+      .withIndex("by_session_and_model", (q) =>
+        q.eq("sessionId", args.sessionId).eq("modelName", args.modelName)
+      )
+      .first();
+
+    if (existing) {
+      // Update existing analysis
+      return await ctx.db.patch(existing._id, {
+        promptId: args.promptId,
+        promptName: args.promptName,
+        promptContent: args.promptContent,
+        temperature: args.temperature,
+        result: args.result,
+        updatedAt: now,
+      });
+    } else {
+      // Create new analysis
+      return await ctx.db.insert("voiceChatAnalyses", {
+        sessionId: args.sessionId,
+        promptId: args.promptId,
+        promptName: args.promptName,
+        promptContent: args.promptContent,
+        modelName: args.modelName,
+        temperature: args.temperature,
+        result: args.result,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  },
+});
+
+// Get voice chat analysis
+export const getVoiceAnalysis = query({
+  args: { sessionId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("voiceChatAnalyses")
+      .withIndex("by_session_and_model", (q) =>
+        q.eq("sessionId", args.sessionId)
+      )
+      .collect();
+  },
+});
+
+// Delete voice chat analysis
+export const deleteVoiceAnalysis = mutation({
+  args: { sessionId: v.string() },
+  handler: async (ctx, args) => {
+    const analyses = await ctx.db
+      .query("voiceChatAnalyses")
+      .withIndex("by_session_and_model", (q) =>
+        q.eq("sessionId", args.sessionId)
+      )
+      .collect();
+
+    for (const analysis of analyses) {
+      await ctx.db.delete(analysis._id);
+    }
+
+    return { success: true };
+  },
+});
+
+// Save voice make text analysis (combined text + results)
+export const saveVoiceMakeTextAnalysis = mutation({
+  args: {
+    sessionId: v.string(),
+    combinedText: v.string(),
+    analysisResults: v.array(
+      v.object({
+        modelName: v.string(),
+        promptId: v.string(),
+        promptName: v.string(),
+        promptContent: v.string(),
+        temperature: v.number(),
+        result: v.string(),
+      })
+    ),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    // Check if make text analysis already exists
+    const existing = await ctx.db
+      .query("voiceMakeTextAnalyses")
+      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .first();
+
+    if (existing) {
+      // Update existing
+      return await ctx.db.patch(existing._id, {
+        combinedText: args.combinedText,
+        analysisResults: args.analysisResults,
+        updatedAt: now,
+      });
+    } else {
+      // Create new
+      return await ctx.db.insert("voiceMakeTextAnalyses", {
+        sessionId: args.sessionId,
+        combinedText: args.combinedText,
+        analysisResults: args.analysisResults,
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  },
+});
+
+// Get voice make text analysis
+export const getVoiceMakeTextAnalysis = query({
+  args: { sessionId: v.string() },
+  handler: async (ctx, args) => {
+    return await ctx.db
+      .query("voiceMakeTextAnalyses")
+      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .first();
+  },
+});
+
+// Delete voice make text analysis
+export const deleteVoiceMakeTextAnalysis = mutation({
+  args: { sessionId: v.string() },
+  handler: async (ctx, args) => {
+    const analysis = await ctx.db
+      .query("voiceMakeTextAnalyses")
+      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .first();
+
+    if (analysis) {
+      await ctx.db.delete(analysis._id);
+    }
+
+    return { success: true };
+  },
+});
+
+// Save voice combined text (for make text functionality)
+export const saveVoiceCombinedText = mutation({
+  args: {
+    sessionId: v.string(),
+    combinedText: v.string(),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+
+    // Check if make text analysis already exists
+    const existing = await ctx.db
+      .query("voiceMakeTextAnalyses")
+      .withIndex("by_session", (q) => q.eq("sessionId", args.sessionId))
+      .first();
+
+    if (existing) {
+      // Update existing with new combined text
+      return await ctx.db.patch(existing._id, {
+        combinedText: args.combinedText,
+        updatedAt: now,
+      });
+    } else {
+      // Create new with empty analysis results
+      return await ctx.db.insert("voiceMakeTextAnalyses", {
+        sessionId: args.sessionId,
+        combinedText: args.combinedText,
+        analysisResults: [],
+        createdAt: now,
+        updatedAt: now,
+      });
+    }
+  },
+});

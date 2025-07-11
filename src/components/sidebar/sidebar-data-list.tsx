@@ -1,19 +1,24 @@
 "use client";
 
-import { ContentType, Chat, Preset, Prompt, Model } from "@/types";
+import { ContentType, Chat, Preset, Prompt, Model, VoiceChat } from "@/types";
 import { FC } from "react";
 import { ChatItem } from "./items/chat/chat-item";
+import { VoiceChatItem } from "./items/voice-chat/voice-chat-item";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface SidebarDataListProps {
   contentType: ContentType;
   data: unknown[];
   folders: unknown[];
+  onSelectVoiceChat?: (sessionId: string) => void;
+  isVoiceAssistantActive?: boolean;
 }
 
 export const SidebarDataList: FC<SidebarDataListProps> = ({
   contentType,
   data,
+  onSelectVoiceChat,
+  isVoiceAssistantActive = false,
 }) => {
   const getDataListComponent = (
     contentType: ContentType,
@@ -38,6 +43,18 @@ export const SidebarDataList: FC<SidebarDataListProps> = ({
         return (
           <motion.div key={(item as Chat)._id} {...baseMotionProps}>
             <ChatItem chat={item as Chat} />
+          </motion.div>
+        );
+      case "voice-chats":
+        // Don't render voice chat items when voice assistant is active
+        if (isVoiceAssistantActive) return null;
+
+        return (
+          <motion.div key={(item as VoiceChat)._id} {...baseMotionProps}>
+            <VoiceChatItem
+              voiceChat={item as VoiceChat}
+              onSelect={onSelectVoiceChat}
+            />
           </motion.div>
         );
       case "presets": {

@@ -13,10 +13,12 @@ import {
 
 interface CalculationInterfaceProps {
   selectedChatId?: string | null;
+  selectedSessionId?: string | null; // For voice chat analysis
 }
 
 export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   selectedChatId,
+  selectedSessionId,
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedPrompts, setSelectedPrompts] = useState<string[]>([]);
@@ -75,14 +77,29 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   const chats = useQuery(api.messages.getChats) || [];
   const selectedChat = chats.find((chat) => chat._id === selectedChatId);
 
+  // Voice chat queries
+  // const voiceChats = useQuery(api.voiceChats.getAllVoiceChats) || [];
+
   const conversationHistory = useQuery(
     api.messages.getConversationHistory,
     selectedChatId ? { chatId: selectedChatId } : "skip"
   );
 
+  // Voice messages for voice chat analysis
+  const voiceMessages = useQuery(
+    api.voiceChats.getVoiceMessages,
+    selectedSessionId ? { sessionId: selectedSessionId } : "skip"
+  );
+
   const existingAnalysis = useQuery(
     api.analyses.getChatAnalysis,
     selectedChatId ? { chatId: selectedChatId } : "skip"
+  );
+
+  // Voice analysis queries
+  const existingVoiceAnalysis = useQuery(
+    api.voiceChats.getVoiceAnalysis,
+    selectedSessionId ? { sessionId: selectedSessionId } : "skip"
   );
 
   // Make Text Analysis queries and mutations
@@ -91,14 +108,35 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
     selectedChatId ? { chatId: selectedChatId } : "skip"
   );
 
+  // Voice Make Text Analysis queries
+  const existingVoiceMakeTextAnalysis = useQuery(
+    api.voiceChats.getVoiceMakeTextAnalysis,
+    selectedSessionId ? { sessionId: selectedSessionId } : "skip"
+  );
+
   const saveMakeTextAnalysis = useMutation(api.messages.saveMakeTextAnalysis);
   const saveCombinedText = useMutation(api.messages.saveCombinedText);
   const deleteMakeTextAnalysis = useMutation(
     api.messages.deleteMakeTextAnalysis
   );
 
+  // Voice analysis mutations
+  const saveVoiceMakeTextAnalysis = useMutation(
+    api.voiceChats.saveVoiceMakeTextAnalysis
+  );
+  const saveVoiceCombinedText = useMutation(
+    api.voiceChats.saveVoiceCombinedText
+  );
+  const deleteVoiceMakeTextAnalysis = useMutation(
+    api.voiceChats.deleteVoiceMakeTextAnalysis
+  );
+
   const saveAnalysis = useMutation(api.analyses.saveAnalysis);
   const deleteAnalysis = useMutation(api.analyses.deleteAnalysis);
+
+  // Voice analysis mutations
+  const saveVoiceAnalysis = useMutation(api.voiceChats.saveVoiceAnalysis);
+  const deleteVoiceAnalysis = useMutation(api.voiceChats.deleteVoiceAnalysis);
 
   const { sendMessage: sendToAI, isGenerating } = useAI(
     "OpenAI", // Using OpenAI for calculations by default
@@ -128,14 +166,16 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   );
 
   useEffect(() => {
-    if (existingAnalysis) {
+    // Handle text chat analysis
+    if (selectedChatId && existingAnalysis) {
       setAnalysisStarted(true);
       setAnalysisResults(existingAnalysis.map((a) => a.result));
       setSelectedPrompts(existingAnalysis.map((a) => a.promptId));
       setIsAnalyzing(false);
       setAnalysisError(null);
-    } else if (existingMakeTextAnalysis) {
-      // Handle Make Text Analysis
+      setMakeTextMode(false);
+    } else if (selectedChatId && existingMakeTextAnalysis) {
+      // Handle Make Text Analysis for text chats
       setMakeTextMode(true);
       setAnalysisStarted(true);
       setAnalysisResults(
@@ -143,6 +183,27 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       );
       setSelectedPrompts(
         existingMakeTextAnalysis.analysisResults.map((a) => a.promptId)
+      );
+      setIsAnalyzing(false);
+      setAnalysisError(null);
+    }
+    // Handle voice chat analysis
+    else if (selectedSessionId && existingVoiceAnalysis) {
+      setAnalysisStarted(true);
+      setAnalysisResults(existingVoiceAnalysis.map((a) => a.result));
+      setSelectedPrompts(existingVoiceAnalysis.map((a) => a.promptId));
+      setIsAnalyzing(false);
+      setAnalysisError(null);
+      setMakeTextMode(false);
+    } else if (selectedSessionId && existingVoiceMakeTextAnalysis) {
+      // Handle Make Text Analysis for voice chats
+      setMakeTextMode(true);
+      setAnalysisStarted(true);
+      setAnalysisResults(
+        existingVoiceMakeTextAnalysis.analysisResults.map((a) => a.result)
+      );
+      setSelectedPrompts(
+        existingVoiceMakeTextAnalysis.analysisResults.map((a) => a.promptId)
       );
       setIsAnalyzing(false);
       setAnalysisError(null);
@@ -156,9 +217,13 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
     }
   }, [
     selectedChatId,
+    selectedSessionId,
     existingAnalysis,
     existingMakeTextAnalysis,
+    existingVoiceAnalysis,
+    existingVoiceMakeTextAnalysis,
     conversationHistory,
+    voiceMessages,
     generateFilteredHistory,
   ]);
 
@@ -225,27 +290,113 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
     return combinedText;
   }, [conversationHistory, generateFilteredHistory]);
 
+  // Function to create combined text from voice messages with exchange numbers
+  const createVoiceMakeText = useCallback(() => {
+    if (!voiceMessages) return "";
+
+    // Apply similar filtering logic as text conversations
+    const generateFilteredVoiceHistory = (
+      originalHistory: Array<{
+        role: "user" | "assistant";
+        content: string;
+        transcription?: string;
+      }>
+    ) => {
+      if (!originalHistory) return undefined;
+
+      return originalHistory.filter((msg, msgIndex) => {
+        if (msg.role === "assistant") {
+          const aiCount = originalHistory
+            .slice(0, msgIndex + 1)
+            .filter((m) => m.role === "assistant").length;
+          return aiCount > 5;
+        } else if (msg.role === "user") {
+          const userCount = originalHistory
+            .slice(0, msgIndex + 1)
+            .filter((m) => m.role === "user").length;
+          return userCount > 6;
+        }
+        return true;
+      });
+    };
+
+    const filteredHistory = generateFilteredVoiceHistory(voiceMessages);
+    if (!filteredHistory) return "";
+
+    let userCount = 0;
+    let aiCount = 0;
+
+    const combinedText = filteredHistory
+      .map((msg) => {
+        let exchangeNumber = "";
+        let role = "";
+
+        if (msg.role === "user") {
+          userCount++;
+          exchangeNumber = `Exchange ${userCount}`;
+          role = "user";
+        } else if (msg.role === "assistant") {
+          aiCount++;
+          exchangeNumber = `Exchange ${aiCount}`;
+          role = "assistant";
+        }
+
+        // Use the transcription if available, otherwise use content
+        const content = msg.transcription || msg.content;
+
+        return exchangeNumber
+          ? `${exchangeNumber} ${role}: ${content}`
+          : `${role}: ${content}`;
+      })
+      .join("\n\n");
+
+    return combinedText;
+  }, [voiceMessages]);
+
+  // Function to create combined text (works for both text and voice)
+  // const createCombinedMakeText = useCallback(() => {
+  //   if (makeTextMode) {
+  //     // For Make Text Analysis, use the voice messages if in voice chat
+  //     return selectedSessionId ? createVoiceMakeText() : createMakeText();
+  //   }
+  //   return "";
+  // }, [makeTextMode, selectedSessionId, createVoiceMakeText, createMakeText]);
+
   // Handle Make Text button click - create and save combined text first
   const handleMakeTextClick = async () => {
-    if (!conversationHistory || !selectedChatId) return;
+    if (
+      (!conversationHistory && !voiceMessages) ||
+      (!selectedChatId && !selectedSessionId)
+    )
+      return;
 
     try {
       setIsAnalyzing(true);
 
-      // Create the combined text
-      const makeText = createMakeText();
+      // Create the combined text based on type
+      const makeText = selectedChatId
+        ? createMakeText()
+        : createVoiceMakeText();
 
       console.log("📝 Creating and saving combined text:", {
+        type: selectedChatId ? "text" : "voice",
         textLength: makeText.length,
         textPreview:
           makeText.substring(0, 500) + (makeText.length > 500 ? "..." : ""),
       });
 
-      // Save combined text to database first
-      await saveCombinedText({
-        chatId: selectedChatId,
-        combinedText: makeText,
-      });
+      // Save combined text to database based on type
+      if (selectedChatId) {
+        await saveCombinedText({
+          chatId: selectedChatId,
+          combinedText: makeText,
+        });
+      } else if (selectedSessionId) {
+        await saveVoiceCombinedText({
+          sessionId: selectedSessionId,
+          combinedText: makeText,
+        });
+      }
 
       console.log("✅ Combined text saved successfully");
 
@@ -265,7 +416,12 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   };
 
   const handleMakeTextAnalysis = async () => {
-    if (!conversationHistory || !calculationSettings || !selectedChatId) return;
+    if (
+      (!conversationHistory && !voiceMessages) ||
+      !calculationSettings ||
+      (!selectedChatId && !selectedSessionId)
+    )
+      return;
 
     setMakeTextMode(true);
     setAnalysisStarted(true);
@@ -274,8 +430,10 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
     setShowModal(false);
 
     try {
-      // Get the combined text from the database (not from memory)
-      const makeTextData = existingMakeTextAnalysis;
+      // Get the combined text from the database based on type
+      const makeTextData = selectedChatId
+        ? existingMakeTextAnalysis
+        : existingVoiceMakeTextAnalysis;
       if (!makeTextData || !makeTextData.combinedText) {
         throw new Error(
           "No combined text found in database. Please create combined text first."
@@ -286,6 +444,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
 
       // Console log the make text data
       console.log("📝 Make Text Analysis - Using saved combined text:", {
+        type: selectedChatId ? "text" : "voice",
         textLength: makeText.length,
         textPreview:
           makeText.substring(0, 500) + (makeText.length > 500 ? "..." : ""),
@@ -326,6 +485,24 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
           promptName: prompt.name,
           systemPromptLength: prompt.content.length,
           userTextLength: makeText.length,
+          messageCount: messages.length,
+          totalCharacters: prompt.content.length + makeText.length,
+          estimatedTokens: Math.ceil(
+            (prompt.content.length + makeText.length) / 4
+          ), // Rough token estimate
+          actualMessages: messages.map((msg) => ({
+            role: msg.role,
+            contentLength: msg.content.length,
+            contentPreview: msg.content.substring(0, 100) + "...",
+          })),
+        });
+
+        console.log("🔍 About to call sendToAI with messages:", {
+          requestType: "MAKE_TEXT_ANALYSIS",
+          modelIndex: index,
+          modelName: modelNames[index],
+          messagesLength: messages.length,
+          messagesTypes: messages.map((m) => m.role),
         });
 
         const result = await sendToAI(messages, {
@@ -347,24 +524,44 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
           });
 
           // Save analysis with make text mode flag (for compatibility)
-          await saveAnalysis({
-            chatId: selectedChatId,
-            promptId,
-            promptName: prompt.name,
-            promptContent: prompt.content,
-            modelName: modelNames[index],
-            temperature: calculationSettings.temperatures[index],
-            result: result, // Save full result for make text mode
-          });
+          if (selectedChatId) {
+            await saveAnalysis({
+              chatId: selectedChatId,
+              promptId,
+              promptName: prompt.name,
+              promptContent: prompt.content,
+              modelName: modelNames[index],
+              temperature: calculationSettings.temperatures[index],
+              result: result, // Save full result for make text mode
+            });
+          } else if (selectedSessionId) {
+            await saveVoiceAnalysis({
+              sessionId: selectedSessionId,
+              promptId,
+              promptName: prompt.name,
+              promptContent: prompt.content,
+              modelName: modelNames[index],
+              temperature: calculationSettings.temperatures[index],
+              result: result, // Save full result for make text mode
+            });
+          }
         }
       }
 
-      // Update the Make Text Analysis in the database with results
-      await saveMakeTextAnalysis({
-        chatId: selectedChatId,
-        combinedText: makeText,
-        analysisResults: analysisResults,
-      });
+      // Update the Make Text Analysis in the database with results based on type
+      if (selectedChatId) {
+        await saveMakeTextAnalysis({
+          chatId: selectedChatId,
+          combinedText: makeText,
+          analysisResults: analysisResults,
+        });
+      } else if (selectedSessionId) {
+        await saveVoiceMakeTextAnalysis({
+          sessionId: selectedSessionId,
+          combinedText: makeText,
+          analysisResults: analysisResults,
+        });
+      }
 
       setAnalysisResults(results);
     } catch (error) {
@@ -498,114 +695,69 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   };
 
   const handleStartAnalysis = async () => {
-    if (!conversationHistory || !calculationSettings) return;
+    if ((!conversationHistory && !voiceMessages) || !calculationSettings)
+      return;
     setAnalysisStarted(true);
     setIsAnalyzing(true);
     setAnalysisError(null);
     setShowModal(false);
 
-    const excludedMessages: Array<{
-      index: number;
-      role: string;
-      content: string;
-      reason: string;
-    }> = [];
-    const filteredHistory = generateFilteredHistory(conversationHistory);
-
-    conversationHistory.forEach((msg, msgIndex) => {
-      if (msg.role === "ai") {
-        const aiCount = conversationHistory
-          .slice(0, msgIndex + 1)
-          .filter((m) => m.role === "ai").length;
-
-        if (aiCount <= 5) {
-          excludedMessages.push({
-            index: msgIndex,
-            role: msg.role,
-            content: msg.content.substring(0, 100) + "...",
-            reason: `AI exchange ${aiCount}/5 (excluded)`,
-          });
-        }
-      } else if (msg.role === "user") {
-        const userCount = conversationHistory
-          .slice(0, msgIndex + 1)
-          .filter((m) => m.role === "user").length;
-
-        if (userCount <= 6) {
-          excludedMessages.push({
-            index: msgIndex,
-            role: msg.role,
-            content: msg.content.substring(0, 100) + "...",
-            reason: `User exchange ${userCount}/6 (excluded)`,
-          });
-        }
-      }
-    });
-
     try {
       const modelNames = calculationSettings.modelNames;
-      const messagesForModels = modelNames.map((modelName, index) => {
+
+      // Create combined text for multi-model analysis (same as Make Text Analysis)
+      const combinedText = selectedChatId
+        ? createMakeText()
+        : createVoiceMakeText();
+
+      console.log("📝 Multi-Model Analysis - Using combined text approach:", {
+        type: selectedChatId ? "text" : "voice",
+        textLength: combinedText.length,
+        textPreview:
+          combinedText.substring(0, 500) +
+          (combinedText.length > 500 ? "..." : ""),
+        modelCount: modelNames.length,
+      });
+
+      const results: string[] = [];
+
+      // Send combined text with each selected prompt to each model
+      for (let index = 0; index < selectedPrompts.length; index++) {
         const promptId = selectedPrompts[index];
         const prompt = allPrompts.find((p) => p._id === promptId);
 
-        if (!filteredHistory) {
-          throw new Error("Failed to generate filtered history");
-        }
+        if (!prompt || !promptId) continue;
 
-        return {
-          model: modelName,
+        const messages = [
+          { role: "system" as const, content: prompt.content },
+          { role: "user" as const, content: combinedText },
+        ];
+
+        console.log("🔍 About to call sendToAI for Multi-Model Analysis:", {
+          requestType: "MULTI_MODEL_ANALYSIS_COMBINED_TEXT",
+          modelIndex: index,
+          modelName: modelNames[index],
+          messagesLength: messages.length,
+          messagesTypes: messages.map((m) => m.role),
+          isTextChat: !!selectedChatId,
+          isVoiceChat: !!selectedSessionId,
+          promptName: prompt.name,
+          combinedTextLength: combinedText.length,
+        });
+
+        const result = await sendToAI(messages, {
+          model: modelNames[index],
           temperature: calculationSettings.temperatures[index],
-          messages: [
-            { role: "system" as const, content: prompt?.content || "" },
-            ...filteredHistory.map((msg, filteredIndex) => {
-              let role: "user" | "assistant" | "system";
-              if (msg.role === "ai") {
-                role = "assistant";
-              } else if (msg.role === "user") {
-                role = "user";
-              } else if (msg.role === "system") {
-                role = "system";
-              } else {
-                role = "user";
-              }
+        });
 
-              // Calculate exchange number based on filtered conversation
-              // Each exchange consists of 2 messages (psychiatrist + user)
-              const exchangeNumber = Math.floor(filteredIndex / 2) + 1;
+        if (result) {
+          results.push(result);
+        }
+      }
 
-              // Filter AI content to remove tracking info before sending to analysis models
-              const cleanContent =
-                role === "assistant"
-                  ? filterAIMessageForCalculation(msg.content)
-                  : msg.content;
+      setAnalysisResults(results);
 
-              // Include the exchange number in the message content
-              const contentWithExchange =
-                role === "assistant"
-                  ? `[Exchange ${exchangeNumber} - Psychiatrist]: ${cleanContent}`
-                  : `[Exchange ${exchangeNumber} - User]: ${cleanContent}`;
-
-              return {
-                role,
-                content: contentWithExchange,
-              } as OpenRouterMessage;
-            }),
-          ],
-          filteredHistory, // Store filtered history for later use
-        };
-      });
-      const results = await Promise.all(
-        messagesForModels.map(async (modelData) => {
-          const result = await sendToAI(modelData.messages, {
-            model: modelData.model,
-            temperature: modelData.temperature,
-          });
-          return result;
-        })
-      );
-      setAnalysisResults(
-        results.filter((result): result is string => result !== null)
-      );
+      // Save analysis results based on type
       if (selectedChatId) {
         await Promise.all(
           results.map(async (result, index) => {
@@ -613,6 +765,24 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
             const prompt = allPrompts.find((p) => p._id === promptId);
             await saveAnalysis({
               chatId: selectedChatId,
+              promptId,
+              promptName: prompt?.name || "Unknown Prompt",
+              promptContent: prompt?.content || "",
+              modelName: modelNames[index],
+              temperature: calculationSettings.temperatures[index],
+              result: result
+                ? filterAIMessageForDatabase(result)
+                : "No response",
+            });
+          })
+        );
+      } else if (selectedSessionId) {
+        await Promise.all(
+          results.map(async (result, index) => {
+            const promptId = selectedPrompts[index];
+            const prompt = allPrompts.find((p) => p._id === promptId);
+            await saveVoiceAnalysis({
+              sessionId: selectedSessionId,
               promptId,
               promptName: prompt?.name || "Unknown Prompt",
               promptContent: prompt?.content || "",
@@ -637,15 +807,29 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
 
   // Format analysis result for better display
   const formatAnalysisResult = (result: string) => {
+    console.log("🎨 Formatting analysis result:", {
+      resultLength: result.length,
+      resultPreview: result.substring(0, 300),
+      fullResult: result,
+    });
+
     let cleanedResult = result;
 
-    // Find the first occurrence of any main analysis section header
+    // Find the first occurrence of any main analysis section header (more flexible patterns)
     const mainSectionPatterns = [
       /# 📋 \*\*HYPERACTIVITY ANALYSIS:/,
       /# 📋 \*\*OPPOSITIONAL BEHAVIOR ANALYSIS:/,
       /# 📋 \*\*COGNITIVE ANALYSIS:/,
       /# 📋 \*\*ADHD INDEX ANALYSIS:/,
       /# 📋 \*\*.*ANALYSIS:/,
+      // More flexible patterns for different response formats
+      /ADHD.*Assessment.*Report/i,
+      /Hyperactivity.*Assessment/i,
+      /Oppositional.*Assessment/i,
+      /Cognitive.*Assessment/i,
+      /ADHD.*Analysis/i,
+      /Assessment.*Report/i,
+      /Specialist.*Report/i,
     ];
 
     let firstSectionIndex = -1;
@@ -659,7 +843,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       }
     }
 
-    // If we found a main section, start from there
+    // If we found a main section, start from there, otherwise use the full result
     if (firstSectionIndex !== -1) {
       cleanedResult = cleanedResult.substring(firstSectionIndex);
     }
@@ -677,6 +861,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
 
     const lines = enhancedResult.split("\n");
     const formattedLines = lines.map((line) => {
+      // Handle markdown headers
       if (line.startsWith("##")) {
         const headerText = line.replace("##", "").trim();
         const processedHeader = headerText.replace(
@@ -692,6 +877,21 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
           '<strong class="font-semibold">$1</strong>'
         );
         return `<h2 class="text-xl font-bold text-slate-800 mt-6 mb-3">${processedHeader}</h2>`;
+      }
+
+      // Handle plain text headers (common patterns)
+      if (line.match(/^[A-Z][A-Z\s]+:?\s*$/)) {
+        // All caps lines like "ASSESSMENT SUMMARY:" or "COGNITIVE ANALYSIS"
+        return `<h3 class="text-lg font-semibold text-slate-800 mt-4 mb-2">${line.trim()}</h3>`;
+      }
+
+      if (
+        line.match(/^ADHD.*Assessment.*Report/i) ||
+        line.match(/^.*Assessment.*Specialist.*Report/i) ||
+        line.match(/^Model:.*gpt/i)
+      ) {
+        // Report titles
+        return `<h2 class="text-xl font-bold text-slate-800 mt-6 mb-3">${line.trim()}</h2>`;
       }
 
       let processedLine = line;
@@ -747,10 +947,16 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   };
 
   const handleDeleteAndRestart = async () => {
-    if (selectedChatId) {
+    if (selectedChatId || selectedSessionId) {
       try {
-        await deleteAnalysis({ chatId: selectedChatId });
-        await deleteMakeTextAnalysis({ chatId: selectedChatId });
+        if (selectedChatId) {
+          await deleteAnalysis({ chatId: selectedChatId });
+          await deleteMakeTextAnalysis({ chatId: selectedChatId });
+        } else if (selectedSessionId) {
+          await deleteVoiceAnalysis({ sessionId: selectedSessionId });
+          await deleteVoiceMakeTextAnalysis({ sessionId: selectedSessionId });
+        }
+
         // Reset all state
         setAnalysisStarted(false);
         setAnalysisResults([]);
@@ -770,7 +976,8 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   };
 
   const enhanceAnalysisWithFullExchanges = (result: string) => {
-    if (!conversationHistory) {
+    const messageHistory = selectedChatId ? conversationHistory : voiceMessages;
+    if (!messageHistory) {
       return result;
     }
 
@@ -801,24 +1008,39 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
           let psychiatristMsg = null;
           let userMsg = null;
 
-          for (let i = 0; i < conversationHistory.length; i++) {
-            const msg = conversationHistory[i];
+          for (let i = 0; i < messageHistory.length; i++) {
+            const msg = messageHistory[i];
+            let msgContent: string;
+
+            if (selectedChatId) {
+              // Text chat message
+              msgContent = msg.content;
+            } else {
+              // Voice chat message - safely access transcription
+              const voiceMsg = msg as {
+                transcription?: string;
+                content: string;
+              };
+              msgContent = voiceMsg.transcription || voiceMsg.content;
+            }
+
             if (
               msg.role === "user" &&
-              msg.content.includes(userTextFromAnalysis)
+              msgContent.includes(userTextFromAnalysis)
             ) {
               userMsg = msg;
               // Calculate the real exchange number based on position in original conversation
               realExchangeNumber = Math.floor(i / 2) + 1;
 
-              // Find the corresponding psychiatrist message
-              if (i > 0 && conversationHistory[i - 1].role === "ai") {
-                psychiatristMsg = conversationHistory[i - 1];
+              // Find the corresponding assistant/psychiatrist message
+              const assistantRole = selectedChatId ? "ai" : "assistant";
+              if (i > 0 && messageHistory[i - 1].role === assistantRole) {
+                psychiatristMsg = messageHistory[i - 1];
               } else if (
-                i < conversationHistory.length - 1 &&
-                conversationHistory[i + 1].role === "ai"
+                i < messageHistory.length - 1 &&
+                messageHistory[i + 1].role === assistantRole
               ) {
-                psychiatristMsg = conversationHistory[i + 1];
+                psychiatristMsg = messageHistory[i + 1];
               }
 
               break;
@@ -826,18 +1048,44 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
           }
 
           if (psychiatristMsg && userMsg && realExchangeNumber) {
-            const cleanPsychiatristContent = psychiatristMsg.content
+            // Clean psychiatrist content based on message type
+            let psychiatristContent: string;
+            if (selectedChatId) {
+              psychiatristContent = psychiatristMsg.content;
+            } else {
+              const voicePsychiatristMsg = psychiatristMsg as {
+                transcription?: string;
+                content: string;
+              };
+              psychiatristContent =
+                voicePsychiatristMsg.transcription ||
+                voicePsychiatristMsg.content;
+            }
+
+            const cleanPsychiatristContent = psychiatristContent
               .replace(/\*\[.*?\]\*/g, "")
               .replace(/\[.*?\]/g, "")
               .replace(/\*\(.*?\)\*/g, "")
               .replace(/\(.*?\)/g, "")
               .trim();
 
+            // Get user content based on message type
+            let userContent: string;
+            if (selectedChatId) {
+              userContent = userMsg.content;
+            } else {
+              const voiceUserMsg = userMsg as {
+                transcription?: string;
+                content: string;
+              };
+              userContent = voiceUserMsg.transcription || voiceUserMsg.content;
+            }
+
             const fullExchange = `**Exchange ${realExchangeNumber}:**
 
-**Psychiatrist:** "${cleanPsychiatristContent}"
+**${selectedChatId ? "Psychiatrist" : "Assistant"}:** "${cleanPsychiatristContent}"
 
-**User:** "${userMsg.content}"`;
+**User:** "${userContent}"`;
 
             const analysisAfterMatch = fullMatchText.match(
               /\n(\*\*(?:FREQUENCY ANALYSIS|SCORE JUSTIFICATION):[\s\S]*)$/
@@ -871,14 +1119,16 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
             </h2>
             <p className="text-sm text-slate-500">
               {selectedChatId
-                ? "Analyze your conversation"
-                : "Select a chat to analyze"}
+                ? "Analyze your text conversation"
+                : selectedSessionId
+                  ? "Analyze your voice conversation"
+                  : "Select a chat to analyze"}
             </p>
           </div>
         </div>
       </div>
 
-      {!selectedChatId ? (
+      {!selectedChatId && !selectedSessionId ? (
         <div className="flex-1 relative overflow-hidden transition-all duration-300 ease-in-out">
           <div className="absolute inset-0">
             <div className="w-full h-full bg-gradient-to-br from-slate-100 via-white to-slate-50 blur-lg transform scale-110"></div>
@@ -888,7 +1138,8 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
               No Chat Selected
             </h3>
             <p className="text-slate-500 max-w-sm leading-relaxed">
-              Click the arrow button on a chat to start analysis.
+              Click the arrow button on a text chat or voice chat to start
+              analysis.
             </p>
           </div>
         </div>
@@ -1052,14 +1303,21 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                     Combined Text
                   </h4>
                   <div className="space-y-4">
-                    {existingMakeTextAnalysis?.combinedText ? (
+                    {existingMakeTextAnalysis?.combinedText ||
+                    existingVoiceMakeTextAnalysis?.combinedText ? (
                       <div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
                         <div className="mb-3 flex items-center justify-between">
                           <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded font-medium">
                             Combined Conversation Text
                           </span>
                           <span className="text-xs text-slate-500">
-                            {existingMakeTextAnalysis.combinedText.length}{" "}
+                            {
+                              (
+                                existingMakeTextAnalysis?.combinedText ||
+                                existingVoiceMakeTextAnalysis?.combinedText ||
+                                ""
+                              ).length
+                            }{" "}
                             characters
                           </span>
                         </div>
@@ -1068,7 +1326,9 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                           dangerouslySetInnerHTML={{
                             __html: (() => {
                               const formattedText =
-                                existingMakeTextAnalysis.combinedText;
+                                existingMakeTextAnalysis?.combinedText ||
+                                existingVoiceMakeTextAnalysis?.combinedText ||
+                                "";
 
                               // Split by double newlines to get exchanges
                               const exchanges = formattedText.split("\n\n");
@@ -1299,7 +1559,10 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                     ? !selectedSinglePrompt
                     : makeTextMode
                       ? selectedPrompts.some((p) => !p) ||
-                        !existingMakeTextAnalysis?.combinedText
+                        !(
+                          existingMakeTextAnalysis?.combinedText ||
+                          existingVoiceMakeTextAnalysis?.combinedText
+                        )
                       : selectedPrompts.some((p) => !p)
                 }
               >

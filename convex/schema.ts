@@ -83,6 +83,35 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_chat", ["chatId"]),
 
+  // Voice analysis tables (similar to text analysis)
+  voiceChatAnalyses: defineTable({
+    sessionId: v.string(),
+    promptId: v.string(),
+    promptName: v.string(),
+    promptContent: v.string(),
+    modelName: v.string(),
+    temperature: v.number(),
+    result: v.string(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_session_and_model", ["sessionId", "modelName"]),
+  voiceMakeTextAnalyses: defineTable({
+    sessionId: v.string(),
+    combinedText: v.string(),
+    analysisResults: v.array(
+      v.object({
+        modelName: v.string(),
+        promptId: v.string(),
+        promptName: v.string(),
+        promptContent: v.string(),
+        temperature: v.number(),
+        result: v.string(),
+      })
+    ),
+    createdAt: v.number(),
+    updatedAt: v.number(),
+  }).index("by_session", ["sessionId"]),
+
   // Voice-specific tables
   voiceChats: defineTable({
     title: v.string(),

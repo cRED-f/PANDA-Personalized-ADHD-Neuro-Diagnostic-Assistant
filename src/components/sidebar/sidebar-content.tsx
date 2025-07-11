@@ -19,17 +19,26 @@ import { motion } from "framer-motion";
 interface SidebarContentProps {
   contentType: ContentType;
   onCreateChat?: () => void;
+  onCreateVoiceChat?: () => void;
   onToggleSidebar?: () => void;
   onSelectCalculationChat?: (chatId: string) => void;
+  onSelectCalculationSession?: (sessionId: string) => void;
+  onSelectVoiceChat?: (sessionId: string) => void;
+  isVoiceAssistantActive?: boolean;
 }
 
 export const SidebarContent: FC<SidebarContentProps> = ({
   contentType,
   onCreateChat,
+  onCreateVoiceChat,
   onToggleSidebar,
   onSelectCalculationChat,
+  onSelectCalculationSession,
+  onSelectVoiceChat,
+  isVoiceAssistantActive = false,
 }) => {
   const chats = useQuery(api.messages.getChats) || [];
+  const voiceChats = useQuery(api.voiceChats.getAllVoiceChats) || [];
   const renderSidebarContent = (
     contentType: ContentType,
     data: unknown[],
@@ -180,12 +189,49 @@ export const SidebarContent: FC<SidebarContentProps> = ({
     } // Special handling for calculate score
     if (contentType === "calculate-score") {
       return (
-        <div className="h-full">
-          <CalculateScore
-            onToggleSidebar={onToggleSidebar}
-            onSelectCalculationChat={onSelectCalculationChat}
-          />
-        </div>
+        <motion.div
+          className="flex h-full flex-col bg-white/90 backdrop-blur-xl"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          {/* Header with Hide Button */}
+          <motion.div
+            className="flex items-center justify-between border-b border-white/20 p-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h2 className="text-sm font-medium text-gray-900">
+              Calculate Score
+            </h2>
+            {onToggleSidebar && (
+              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-md text-gray-500 hover:bg-white/50 hover:text-gray-700 transition-colors duration-200"
+                  onClick={onToggleSidebar}
+                >
+                  <IconChevronLeft size={16} />
+                </Button>
+              </motion.div>
+            )}
+          </motion.div>
+
+          {/* Calculate Score Content */}
+          <motion.div
+            className="flex-1 overflow-y-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <CalculateScore
+              onSelectCalculationChat={onSelectCalculationChat}
+              onSelectCalculationSession={onSelectCalculationSession}
+            />
+          </motion.div>
+        </motion.div>
       );
     }
 
@@ -230,6 +276,7 @@ export const SidebarContent: FC<SidebarContentProps> = ({
           <SidebarCreateButtons
             contentType={contentType}
             onCreateChat={onCreateChat}
+            onCreateVoiceChat={onCreateVoiceChat}
           />
         </motion.div>
         {/* Data List */}
@@ -244,6 +291,8 @@ export const SidebarContent: FC<SidebarContentProps> = ({
               contentType={contentType}
               data={data}
               folders={folders}
+              onSelectVoiceChat={onSelectVoiceChat}
+              isVoiceAssistantActive={isVoiceAssistantActive}
             />
           )}
 
@@ -264,6 +313,8 @@ export const SidebarContent: FC<SidebarContentProps> = ({
   switch (contentType) {
     case "chats":
       return renderSidebarContent("chats", chats, []);
+    case "voice-chats":
+      return renderSidebarContent("voice-chats", voiceChats, []);
     case "presets":
       return renderSidebarContent("presets", [], []);
     case "prompts":

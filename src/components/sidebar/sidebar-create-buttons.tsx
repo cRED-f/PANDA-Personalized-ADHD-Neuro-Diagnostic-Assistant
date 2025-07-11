@@ -11,11 +11,13 @@ import { motion } from "framer-motion";
 interface SidebarCreateButtonsProps {
   contentType: ContentType;
   onCreateChat?: () => void;
+  onCreateVoiceChat?: () => void;
 }
 
 export const SidebarCreateButtons: FC<SidebarCreateButtonsProps> = ({
   contentType,
   onCreateChat,
+  onCreateVoiceChat,
 }) => {
   const createChat = useMutation(api.messages.createChat);
 
@@ -26,6 +28,13 @@ export const SidebarCreateButtons: FC<SidebarCreateButtonsProps> = ({
           onCreateChat ||
           (async () => {
             await createChat({ title: "New Chat" });
+          })
+        );
+      case "voice-chats":
+        return (
+          onCreateVoiceChat ||
+          (async () => {
+            console.log("Create voice chat");
           })
         );
       case "presets":

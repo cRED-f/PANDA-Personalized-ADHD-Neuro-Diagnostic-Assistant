@@ -8,11 +8,13 @@ import { VoiceAssistantView } from "./voice-assistant-view";
 interface VoiceAssistantModalProps {
   isOpen: boolean;
   onClose: () => void;
+  existingSessionId?: string;
 }
 
 export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
   isOpen,
   onClose,
+  existingSessionId,
 }) => {
   const [showInterface, setShowInterface] = useState(false);
   const [isTransitioning, setIsTransitioning] = useState(false);
@@ -131,8 +133,14 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
     setIsTransitioning(false);
   };
 
-  if (showInterface) {
-    return <VoiceAssistantView onBack={handleBack} onClose={onClose} />;
+  if (showInterface || existingSessionId) {
+    return (
+      <VoiceAssistantView
+        onBack={existingSessionId ? onClose : handleBack}
+        onClose={onClose}
+        existingSessionId={existingSessionId}
+      />
+    );
   }
 
   return (

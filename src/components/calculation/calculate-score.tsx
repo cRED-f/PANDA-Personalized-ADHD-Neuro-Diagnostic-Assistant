@@ -4,25 +4,42 @@ import { FC } from "react";
 import { useQuery } from "convex/react";
 import { api } from "../../../convex/_generated/api";
 import {
-  IconCalculator,
   IconMessageCircle,
   IconCalendar,
   IconArrowRight,
+  IconMicrophone,
 } from "@tabler/icons-react";
 
 interface CalculateScoreProps {
   onToggleSidebar?: () => void;
   onSelectCalculationChat?: (chatId: string) => void;
+  onSelectCalculationSession?: (sessionId: string) => void;
 }
 
 const CalculateScore: FC<CalculateScoreProps> = ({
   onSelectCalculationChat,
+  onSelectCalculationSession,
 }) => {
   const chats = useQuery(api.messages.getChats) || [];
+  const voiceChats = useQuery(api.voiceChats.getAllVoiceChats) || [];
+
   const handleCalculateScore = (chatId: string, chatTitle: string) => {
     // Select the chat for calculation and let parent know
     onSelectCalculationChat?.(chatId);
     console.log("Selected chat for calculation:", chatId, chatTitle);
+  };
+
+  const handleCalculateVoiceScore = (
+    sessionId: string,
+    sessionTitle: string
+  ) => {
+    // Select the voice session for calculation and let parent know
+    onSelectCalculationSession?.(sessionId);
+    console.log(
+      "Selected voice session for calculation:",
+      sessionId,
+      sessionTitle
+    );
   };
 
   const formatDate = (timestamp: number) => {
@@ -35,82 +52,147 @@ const CalculateScore: FC<CalculateScoreProps> = ({
 
   return (
     <div className="h-full flex flex-col">
-      {/* Header */}
-      <div className="flex items-center justify-between border-b border-slate-200/60 p-6 flex-shrink-0 bg-white">
-        <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-slate-600 rounded-lg flex items-center justify-center">
-            <IconCalculator size={20} className="text-white" />
-          </div>
-          <div>
-            <h2 className="text-xl font-bold text-slate-800">
-              Calculate Score
-            </h2>
-            <p className="text-sm text-slate-500">Analyze your conversations</p>
-          </div>
-        </div>
-        <div className="bg-slate-100 px-3 py-1.5 rounded-full">
-          <span className="text-sm font-medium text-slate-600">
-            {chats.length} chat{chats.length !== 1 ? "s" : ""}
-          </span>
-        </div>
-      </div>
       {/* Content */}
-      <div className="flex-1 overflow-y-auto bg-white">
-        {chats.length === 0 ? (
+      <div className="flex-1 overflow-y-auto bg-white/90 backdrop-blur-xl">
+        {chats.length === 0 && voiceChats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-6">
             <div className="w-20 h-20 bg-slate-100 rounded-2xl flex items-center justify-center mb-6">
               <IconMessageCircle size={40} className="text-slate-500" />
             </div>
             <h3 className="text-xl font-semibold text-slate-800 mb-3">
-              No Chats Found
+              No Conversations Found
             </h3>
             <p className="text-slate-500 max-w-sm leading-relaxed">
-              Start a conversation to calculate scores and analyze your chat
-              interactions.
+              Start a text or voice conversation to calculate scores and analyze
+              your interactions.
             </p>
           </div>
         ) : (
-          <div className="p-4 space-y-3">
-            {chats.map((chat) => (
-              <div
-                key={chat._id}
-                className="group bg-white border border-slate-200 rounded-lg p-3 hover:shadow-md hover:border-slate-300 transition-all duration-200 cursor-pointer"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex-1 min-w-0">
-                    {" "}
-                    <div className="flex items-center space-x-2 mb-1">
-                      <div className="w-6 h-6 bg-slate-500 rounded flex items-center justify-center flex-shrink-0">
-                        <IconMessageCircle size={12} className="text-white" />
-                      </div>
-                      <h3 className="text-sm font-medium text-slate-800 truncate">
-                        {chat.title}
-                      </h3>
-                    </div>
-                    <div className="flex items-center text-xs text-slate-500 ml-8">
-                      <IconCalendar size={10} className="mr-1 text-slate-400" />
-                      <span>{formatDate(chat.createdAt)}</span>
-                    </div>
-                  </div>
+          <div className="p-4 space-y-6">
+            {/* Text Chats Section */}
+            {chats.length > 0 && (
+              <div>
+                <div className="flex items-center space-x-2 mb-3 px-1">
+                  <IconMessageCircle size={16} className="text-slate-600" />
+                  <h4 className="text-sm font-medium text-slate-700">
+                    Text Conversations
+                  </h4>
+                  <span className="text-xs text-slate-500 bg-slate-100 px-2 py-1 rounded-full">
+                    {chats.length}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {chats.map((chat) => (
+                    <div
+                      key={chat._id}
+                      className="group bg-white border border-slate-200 rounded-lg p-3 hover:shadow-md hover:border-slate-300 transition-all duration-200 cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <div className="w-6 h-6 bg-slate-500 rounded flex items-center justify-center flex-shrink-0">
+                              <IconMessageCircle
+                                size={12}
+                                className="text-white"
+                              />
+                            </div>
+                            <h3 className="text-sm font-medium text-slate-800 truncate">
+                              {chat.title}
+                            </h3>
+                          </div>
+                          <div className="flex items-center text-xs text-slate-500 ml-8">
+                            <IconCalendar
+                              size={10}
+                              className="mr-1 text-slate-400"
+                            />
+                            <span>{formatDate(chat.createdAt)}</span>
+                          </div>
+                        </div>
 
-                  <button
-                    onClick={() => handleCalculateScore(chat._id, chat.title)}
-                    className="ml-3 w-8 h-8 bg-slate-600 hover:bg-slate-700 text-white rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200"
-                  >
-                    <IconArrowRight size={14} />
-                  </button>
+                        <button
+                          onClick={() =>
+                            handleCalculateScore(chat._id, chat.title)
+                          }
+                          className="ml-3 w-8 h-8 bg-slate-600 hover:bg-slate-700 text-white rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200"
+                        >
+                          <IconArrowRight size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
-            ))}
+            )}
+
+            {/* Voice Sessions Section */}
+            {voiceChats.length > 0 && (
+              <div>
+                <div className="flex items-center space-x-2 mb-3 px-1">
+                  <IconMicrophone size={16} className="text-blue-600" />
+                  <h4 className="text-sm font-medium text-slate-700">
+                    Voice Conversations
+                  </h4>
+                  <span className="text-xs text-slate-500 bg-blue-100 px-2 py-1 rounded-full">
+                    {voiceChats.length}
+                  </span>
+                </div>
+                <div className="space-y-2">
+                  {voiceChats.map((voiceChat) => (
+                    <div
+                      key={voiceChat._id}
+                      className="group bg-white border border-blue-200 rounded-lg p-3 hover:shadow-md hover:border-blue-300 transition-all duration-200 cursor-pointer"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center space-x-2 mb-1">
+                            <div className="w-6 h-6 bg-blue-500 rounded flex items-center justify-center flex-shrink-0">
+                              <IconMicrophone
+                                size={12}
+                                className="text-white"
+                              />
+                            </div>
+                            <h3 className="text-sm font-medium text-slate-800 truncate">
+                              {voiceChat.title}
+                            </h3>
+                          </div>
+                          <div className="flex items-center text-xs text-slate-500 ml-8">
+                            <IconCalendar
+                              size={10}
+                              className="mr-1 text-slate-400"
+                            />
+                            <span>{formatDate(voiceChat.createdAt)}</span>
+                            <span className="ml-2 text-blue-600">
+                              {voiceChat.totalMessages} messages
+                            </span>
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() =>
+                            handleCalculateVoiceScore(
+                              voiceChat.sessionId,
+                              voiceChat.title
+                            )
+                          }
+                          className="ml-3 w-8 h-8 bg-blue-600 hover:bg-blue-700 text-white rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200"
+                        >
+                          <IconArrowRight size={14} />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         )}
-      </div>{" "}
+      </div>
       {/* Footer Info */}
-      {chats.length > 0 && (
-        <div className="border-t border-slate-200/60 p-6 flex-shrink-0 bg-white">
+      {(chats.length > 0 || voiceChats.length > 0) && (
+        <div className="border-t border-white/20 p-6 flex-shrink-0 bg-white/90 backdrop-blur-xl">
           <div className="flex items-center justify-center space-x-2 text-sm text-slate-500">
             <div className="w-2 h-2 bg-slate-400 rounded-full animate-pulse"></div>
-            <span>Click on any chat to analyze its conversation score</span>
+            <span>Click on any conversation to analyze its score</span>
           </div>
         </div>
       )}

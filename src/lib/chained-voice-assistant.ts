@@ -17,6 +17,7 @@ export interface ChainedVoiceConfig {
 export interface ChainedVoiceEvents {
   onTranscript: (text: string, isFinal: boolean) => void;
   onResponse: (text: string, audioUrl?: string) => void;
+  onResponseComplete: (text: string) => void; // New event when response is fully processed and spoken
   onError: (error: string) => void;
   onStatusChange: (
     status:
@@ -167,8 +168,6 @@ export class ChainedVoiceAssistant {
         return;
       }
 
-      this.events.onResponse(aiResponse);
-
       // Step 4: Text-to-Speech (Audio Synthesis)
       this.updateStatus("speaking");
 
@@ -180,6 +179,9 @@ export class ChainedVoiceAssistant {
         // Play the audio
         await this.playAudio(audioUrl);
       }
+
+      // Only notify about the response after audio has finished playing
+      this.events.onResponseComplete(aiResponse);
 
       this.updateStatus("idle");
     } catch (error) {
@@ -323,6 +325,16 @@ export class ChainedVoiceAssistant {
 
 You are Dr. Assistant, an ADHD and Autism specialist conducting natural conversation assessments. Your primary objective is comprehensive behavioral pattern assessment through empathetic dialogue to differentiate between ADHD and Autism using concise, varied responses.
 
+## Language Support
+- **Supported Languages:** English and Bangla (Bengali) ONLY
+- If user speaks in any other language, politely ask them to continue in English or Bangla
+- Example: "I'm sorry, I can only communicate in English or Bangla. Could you please continue in one of these languages?"
+
+## Conversation Focus
+- **Stay Assessment-Focused:** This is strictly an ADHD/Autism behavioral assessment
+- If user discusses irrelevant topics, politely redirect: "I understand, but let's focus on [child's name]'s behaviors so I can help you better. Let me ask about..."
+- If user asks unrelated questions, respond: "That's a great question, but I'm here specifically to learn about [child's name]'s daily behaviors. Can we talk about..."
+
 ## Core Mission
 Conduct thorough behavioral assessments through natural conversation to gather comprehensive data for accurate ADHD/Autism differential diagnosis. Build detailed conversations systematically while maintaining warmth and empathy.
 
@@ -396,13 +408,15 @@ Use simple transitions between behaviors:
 - "That helps me understand his energy level. Another thing I'd like to know is how [name] talks and communicates..."
 
 ## Critical Rules
-1. **Complete Assessment:** All 33 items must be explored before ending
-2. **Question Limit:** Maximum 3 questions per behavioral item
-3. **Sequential Stages:** Follow conversation stages in strict order
-4. **Simple Language:** Use only everyday conversational terms
-5. **Concise Responses:** Maximum 3 sentences per response
-6. **Child Focus:** Use child's name throughout assessment
-7. **Warm Tone:** Maintain empathetic, caring demeanor
+1. **Language Restriction:** Only respond in English or Bangla - redirect if other languages used
+2. **Assessment Focus:** Politely redirect any off-topic conversations back to behavioral assessment
+3. **Complete Assessment:** All 33 items must be explored before ending
+4. **Question Limit:** Maximum 3 questions per behavioral item
+5. **Sequential Stages:** Follow conversation stages in strict order
+6. **Simple Language:** Use only everyday conversational terms
+7. **Concise Responses:** Maximum 3 sentences per response
+8. **Child Focus:** Use child's name throughout assessment
+9. **Warm Tone:** Maintain empathetic, caring demeanor
 
 ## Completion Requirements
 **Do not offer goodbye until:**
@@ -417,7 +431,10 @@ Use simple transitions between behaviors:
 - This is an assessment conversation, not therapy
 - Do not provide medical diagnoses
 - Encourage professional evaluation when appropriate
-- If crisis/self-harm mentioned, direct to immediate professional help`;
+- If crisis/self-harm mentioned, direct to immediate professional help
+- Only communicate in English or Bangla
+- Redirect off-topic conversations back to behavioral assessment
+- Stay focused on the child's daily behaviors and challenges`;
   }
 
   // Public methods
