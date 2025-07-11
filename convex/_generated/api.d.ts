@@ -20,7 +20,7 @@ import type * as messages from "../messages.js";
 import type * as migrations from "../migrations.js";
 import type * as prompts from "../prompts.js";
 import type * as settings from "../settings.js";
-import type * as voiceSessions from "../voiceSessions.js";
+import type * as voiceChats from "../voiceChats.js";
 
 /**
  * A utility for referencing Convex functions in your app's API.
@@ -38,7 +38,7 @@ declare const fullApi: ApiFromModules<{
   migrations: typeof migrations;
   prompts: typeof prompts;
   settings: typeof settings;
-  voiceSessions: typeof voiceSessions;
+  voiceChats: typeof voiceChats;
 }>;
 export declare const api: FilterApi<
   typeof fullApi,

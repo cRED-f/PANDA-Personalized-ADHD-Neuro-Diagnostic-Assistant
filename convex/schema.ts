@@ -83,44 +83,34 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_chat", ["chatId"]),
 
-  voiceSessions: defineTable({
-    sessionId: v.string(),
-    userId: v.optional(v.string()),
+  // Voice-specific tables
+  voiceChats: defineTable({
     title: v.string(),
-    startTime: v.number(),
-    endTime: v.optional(v.number()),
-    totalMessages: v.number(),
+    sessionId: v.string(), // Unique session identifier
     status: v.union(
       v.literal("active"),
       v.literal("paused"),
       v.literal("completed")
     ),
-    metadata: v.optional(
-      v.object({
-        totalDuration: v.optional(v.number()),
-        averageResponseTime: v.optional(v.number()),
-        mood: v.optional(v.string()),
-        topics: v.optional(v.array(v.string())),
-      })
-    ),
+    startTime: v.number(),
+    endTime: v.optional(v.number()),
+    totalMessages: v.number(),
+    createdAt: v.number(),
+    updatedAt: v.number(),
   }).index("by_session", ["sessionId"]),
 
   voiceMessages: defineTable({
-    sessionId: v.string(),
-    messageId: v.string(),
-    role: v.union(
-      v.literal("user"),
-      v.literal("assistant"),
-      v.literal("system")
-    ),
+    sessionId: v.string(), // Links to voiceChats
+    messageId: v.string(), // Unique message ID
+    role: v.union(v.literal("user"), v.literal("assistant")),
     content: v.string(),
-    audioUrl: v.optional(v.string()),
-    transcription: v.optional(v.string()),
+    audioUrl: v.optional(v.string()), // For audio playback
+    transcription: v.optional(v.string()), // STT result
     timestamp: v.number(),
-    duration: v.optional(v.number()),
+    duration: v.optional(v.number()), // Audio duration in seconds
     metadata: v.optional(
       v.object({
-        confidence: v.optional(v.number()),
+        confidence: v.optional(v.number()), // STT confidence
         language: v.optional(v.string()),
         emotion: v.optional(v.string()),
         processingTime: v.optional(v.number()),

@@ -219,7 +219,7 @@ export class OpenAIService {
     } = {}
   ): Promise<VoiceTranscriptionResult> {
     const {
-      model = "whisper-1",
+      model = "gpt-4o-transcribe",
       language = "en",
       prompt,
       temperature = 0,
@@ -293,9 +293,9 @@ export class OpenAIService {
     } = {}
   ): Promise<VoiceGenerationResult> {
     const {
-      model = "tts-1",
+      model = "gpt-4o-mini-tts",
       voice = "alloy",
-      response_format = "mp3",
+      response_format = "wav",
       speed = 1.0,
     } = options;
 
@@ -347,6 +347,140 @@ export class OpenAIService {
       };
     } catch (error) {
       console.error("OpenAI TTS Error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Transcribe audio using OpenAI Whisper
+   */
+  async transcribeAudio(audioFile: File): Promise<VoiceTranscriptionResult> {
+    try {
+      const formData = new FormData();
+      formData.append("file", audioFile);
+      formData.append("model", "gpt-4o-transcribe");
+      formData.append("response_format", "json");
+
+      console.log("🎤 Transcribing audio with Whisper...");
+
+      const response = await fetch(`${this.baseUrl}/audio/transcriptions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+        },
+        body: formData,
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          `Transcription failed: ${response.status} ${response.statusText}. ${
+            errorData.error?.message || ""
+          }`
+        );
+      }
+
+      const result = await response.json();
+      console.log("✅ Transcription successful:", result.text);
+
+      return {
+        text: result.text || "",
+        language: result.language,
+        duration: result.duration,
+      };
+    } catch (error) {
+      console.error("❌ Transcription error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate speech using OpenAI TTS
+   */
+  async generateSpeech(
+    text: string,
+    voice: string = "alloy",
+    model: string = "gpt-4o-mini-tts"
+  ): Promise<ArrayBuffer> {
+    try {
+      console.log("🗣️ Generating speech with TTS...");
+
+      const response = await fetch(`${this.baseUrl}/audio/speech`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          input: text,
+          voice,
+          response_format: "wav",
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          `Speech generation failed: ${response.status} ${response.statusText}. ${
+            errorData.error?.message || ""
+          }`
+        );
+      }
+
+      const audioBuffer = await response.arrayBuffer();
+      console.log("✅ Speech generation successful");
+
+      return audioBuffer;
+    } catch (error) {
+      console.error("❌ Speech generation error:", error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate chat completion
+   */
+  async generateChatCompletion(
+    messages: OpenAIMessage[],
+    model: string = "gpt-4.1",
+    options: {
+      temperature?: number;
+      max_tokens?: number;
+    } = {}
+  ): Promise<OpenAIResponse> {
+    try {
+      console.log("🤔 Generating chat completion...");
+
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${this.apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: options.temperature || 0.7,
+          max_tokens: options.max_tokens || 500,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(
+          `Chat completion failed: ${response.status} ${response.statusText}. ${
+            errorData.error?.message || ""
+          }`
+        );
+      }
+
+      const result = await response.json();
+      console.log("✅ Chat completion successful");
+
+      return result;
+    } catch (error) {
+      console.error("❌ Chat completion error:", error);
       throw error;
     }
   }
