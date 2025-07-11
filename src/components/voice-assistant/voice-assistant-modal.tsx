@@ -21,34 +21,59 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
 
   const conversationMessages = [
     {
-      speaker: "Patient",
-      text: "I've been feeling overwhelmed lately...",
+      speaker: "Parent",
+      text: "hi",
       isUser: true,
     },
     {
       speaker: "AI Psychiatrist",
-      text: "I hear you. Can you tell me more about what's contributing to this feeling?",
+      text: "Hello! I'm Dr. Assistant. How are you feeling today?",
       isUser: false,
     },
     {
-      speaker: "Patient",
-      text: "It's work, deadlines, and I can't seem to focus.",
+      speaker: "Parent",
+      text: "fine",
       isUser: true,
     },
     {
       speaker: "AI Psychiatrist",
-      text: "Work stress can be challenging. Let's explore some mindfulness techniques that might help.",
+      text: "Glad you're feeling fine today. What brings you here - is there something specific you'd like to talk about?",
       isUser: false,
     },
     {
-      speaker: "Patient",
-      text: "I'd like that. I feel like I'm losing control.",
+      speaker: "Parent",
+      text: "i want to talk about my son",
       isUser: true,
     },
     {
       speaker: "AI Psychiatrist",
-      text: "You're taking a positive step by reaching out. Let's work on this together.",
+      text: "Thanks for sharing about your son - I'd really like to understand him better. Could you tell me his name and how old he is?",
       isUser: false,
+    },
+    {
+      speaker: "Parent",
+      text: "He's Fahim and 12 years old",
+      isUser: true,
+    },
+    {
+      speaker: "AI Psychiatrist",
+      text: "Thank you for telling me about Fahim. Just two more quick things - what grade is he in, and could you share what specific concerns you have about him?",
+      isUser: false,
+    },
+    {
+      speaker: "Parent",
+      text: "he is in 6th grade and he is having hard time focusing on study",
+      isUser: true,
+    },
+    {
+      speaker: "AI Psychiatrist",
+      text: "I hear how concerned you are about Fahim's focus during study time. When he's trying to do homework, what kinds of things tend to distract him the most?",
+      isUser: false,
+    },
+    {
+      speaker: "Parent",
+      text: "When Fahim is doing homework, the things that tend to distract him the most are noises in the environment",
+      isUser: true,
     },
   ];
 
@@ -66,13 +91,15 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
           if (currentMessage < conversationMessages.length) {
             setVisibleMessages(currentMessage + 1);
             currentMessage++;
-            setTimeout(showNextMessage, 2000); // Show next message after 2 seconds
+            setTimeout(showNextMessage, 2500); // Show next message after 2.5 seconds for better readability
           } else {
             // Reset after a pause to create infinite loop
             setTimeout(() => {
+              setVisibleMessages(0); // Clear all messages first
               currentMessage = 0;
-              setVisibleMessages(0);
-              setTimeout(showNextMessage, 500); // Small delay before restarting
+              setTimeout(() => {
+                showNextMessage(); // Restart the sequence
+              }, 500); // Small delay before restarting
             }, 3000); // 3 second pause before restarting
           }
         };
@@ -111,7 +138,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="h-full w-full bg-gradient-to-br from-gray-900 via-blue-900 to-slate-900 overflow-hidden relative">
+        <div className="h-full w-full bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 overflow-hidden relative">
           {/* Enhanced Animated Background Elements */}
           <motion.div
             className="absolute inset-0 overflow-hidden"
@@ -130,9 +157,9 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
             }
             transition={{ duration: 1.2, ease: "easeInOut" }}
           >
-            {/* Primary floating orbs */}
+            {/* Primary floating orbs with dark blue and subtle lime accents */}
             <motion.div
-              className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-full blur-3xl"
+              className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-r from-blue-600/15 to-indigo-600/15 rounded-full blur-3xl"
               animate={{
                 x: [0, 100, 0],
                 y: [0, -50, 0],
@@ -146,7 +173,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
               }}
             />
             <motion.div
-              className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-full blur-3xl"
+              className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-r from-indigo-600/15 to-blue-700/15 rounded-full blur-3xl"
               animate={{
                 x: [0, -80, 0],
                 y: [0, 30, 0],
@@ -160,14 +187,14 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
               }}
             />
 
-            {/* Additional psychiatric-themed floating elements */}
+            {/* Additional dark blue floating elements */}
             <motion.div
-              className="absolute top-1/3 right-1/4 w-64 h-64 bg-gradient-to-r from-cyan-500/15 to-teal-500/15 rounded-full blur-2xl"
+              className="absolute top-1/3 right-1/4 w-64 h-64 bg-gradient-to-r from-slate-700/10 to-blue-800/10 rounded-full blur-2xl"
               animate={{
                 x: [0, -60, 0],
                 y: [0, 40, 0],
                 scale: [1, 1.3, 1],
-                opacity: [0.3, 0.6, 0.3],
+                opacity: [0.15, 0.3, 0.15],
               }}
               transition={{
                 duration: 18,
@@ -176,9 +203,9 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
               }}
             />
 
-            {/* Brain-wave like patterns */}
+            {/* Brain-wave like patterns with dark blue hints */}
             <motion.div
-              className="absolute top-1/2 left-1/3 w-32 h-32 bg-gradient-to-r from-indigo-500/20 to-blue-500/20 rounded-full blur-xl"
+              className="absolute top-1/2 left-1/3 w-32 h-32 bg-gradient-to-r from-indigo-700/12 to-blue-800/12 rounded-full blur-xl"
               animate={{
                 x: [0, 50, -30, 0],
                 y: [0, -20, 20, 0],
@@ -192,11 +219,11 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
               }}
             />
 
-            {/* Floating particles throughout */}
+            {/* Floating dark blue particles throughout */}
             {[...Array(12)].map((_, i) => (
               <motion.div
                 key={i}
-                className="absolute w-3 h-3 bg-white/10 rounded-full blur-sm"
+                className="absolute w-3 h-3 bg-blue-400/10 rounded-full blur-sm"
                 style={{
                   top: `${Math.random() * 100}%`,
                   left: `${Math.random() * 100}%`,
@@ -234,7 +261,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
           <AnimatePresence mode="wait">
             {!isTransitioning && (
               <motion.div
-                className="relative z-10 h-full flex flex-col items-center justify-center p-3 overflow-y-auto"
+                className="relative z-10 h-full flex flex-col justify-between items-center p-6 overflow-y-auto"
                 initial={{ opacity: 1, scale: 1 }}
                 exit={{
                   opacity: 0,
@@ -244,331 +271,343 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                   transition: { duration: 1.2, ease: "easeInOut" },
                 }}
               >
-                {/* Header */}
-                <motion.div
-                  className="text-center mb-4"
-                  initial={{ opacity: 0, y: 50 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.2, duration: 0.8 }}
-                >
-                  {/* Enhanced Voice visualization bars with realistic patterns */}
-
-                  {/* Voice activity indicator */}
+                {/* Main content section - centered */}
+                <div className="flex-1 flex flex-col items-center justify-center  mx-auto w-full">
+                  {/* Header */}
                   <motion.div
-                    className="flex justify-center items-center gap-2 mb-4"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.5, duration: 0.5 }}
-                  >
-                    <motion.div
-                      className="w-2 h-2 bg-gradient-to-r from-green-400 to-emerald-400 rounded-full"
-                      animate={{
-                        scale: [1, 1.4, 1],
-                        boxShadow: [
-                          "0 0 0 0 rgba(34, 197, 94, 0.7)",
-                          "0 0 0 6px rgba(34, 197, 94, 0)",
-                          "0 0 0 0 rgba(34, 197, 94, 0.7)",
-                        ],
-                      }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    />
-                    <motion.span
-                      className="text-green-300 text-xs font-medium"
-                      initial={{ opacity: 1 }}
-                      animate={{ opacity: 1 }}
-                    >
-                      AI Voice Ready
-                    </motion.span>
-                  </motion.div>
-
-                  <motion.h1
-                    initial={{ opacity: 0, y: 20 }}
+                    className="text-center mb-4"
+                    initial={{ opacity: 0, y: 50 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.6, duration: 0.6 }}
-                    className="text-2xl font-bold text-white mb-1"
+                    transition={{ delay: 0.2, duration: 0.8 }}
                   >
-                    AI Psychiatrist
-                  </motion.h1>
+                    {/* Enhanced Voice visualization bars with realistic patterns */}
 
-                  {/* Fixed subtitle without shaking */}
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: 1.2, duration: 0.6 }}
-                    className="h-5 flex items-center justify-center mb-3"
-                  >
-                    <p className="text-base text-gray-300 max-w-2xl mx-auto">
-                      I&apos;m here to listen. Let&apos;s talk about what&apos;s
-                      on your mind.
-                    </p>
-                  </motion.div>
-                </motion.div>
-
-                {/* Features List - Therapy Session Preview */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.8, duration: 0.5 }}
-                  className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3 max-w-3xl"
-                >
-                  {[
-                    {
-                      icon: "�",
-                      title: "Active Listening",
-                      desc: "Empathetic AI that truly understands",
-                      color: "from-blue-500/20 to-cyan-500/20",
-                      delay: 0.9,
-                    },
-                    {
-                      icon: "🧠",
-                      title: "Cognitive Support",
-                      desc: "Evidence-based therapeutic techniques",
-                      color: "from-indigo-500/20 to-blue-500/20",
-                      delay: 1.0,
-                    },
-                    {
-                      icon: "💭",
-                      title: "Mindful Conversations",
-                      desc: "Safe space for self-expression",
-                      color: "from-green-500/20 to-emerald-500/20",
-                      delay: 1.1,
-                    },
-                  ].map((feature, index) => (
+                    {/* Voice activity indicator */}
                     <motion.div
-                      key={index}
+                      className="flex justify-center items-center gap-2 mb-4"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 1.5, duration: 0.5 }}
+                    >
+                      <motion.div
+                        className="w-2 h-2 bg-gradient-to-r from-lime-400 to-green-400 rounded-full"
+                        animate={{
+                          scale: [1, 1.4, 1],
+                          boxShadow: [
+                            "0 0 0 0 rgba(132, 204, 22, 0.7)",
+                            "0 0 0 6px rgba(132, 204, 22, 0)",
+                            "0 0 0 0 rgba(132, 204, 22, 0.7)",
+                          ],
+                        }}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      />
+                      <motion.span
+                        className="text-lime-300 text-xs font-medium"
+                        initial={{ opacity: 1 }}
+                        animate={{ opacity: 1 }}
+                      >
+                        AI Voice Ready
+                      </motion.span>
+                    </motion.div>
+
+                    <motion.h1
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: feature.delay, duration: 0.6 }}
-                      whileHover={{ scale: 1.02 }}
-                      className={`relative text-center p-3 bg-gradient-to-br ${feature.color} backdrop-blur-sm border border-white/30 rounded-xl overflow-hidden group cursor-pointer`}
+                      transition={{ delay: 0.6, duration: 0.6 }}
+                      className="text-3xl font-bold text-white mb-2"
                     >
-                      <div className="text-xl mb-1">{feature.icon}</div>
-                      <h3 className="font-bold text-white mb-1 text-xs">
-                        {feature.title}
-                      </h3>
-                      <p className="text-xs text-gray-300 leading-relaxed">
-                        {feature.desc}
+                      AI Psychiatrist Voice Assistant
+                    </motion.h1>
+
+                    {/* Fixed subtitle without shaking */}
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 1.2, duration: 0.6 }}
+                      className="h-16 flex mt-6 items-center justify-center mb-6"
+                    >
+                      <p className="text-lg text-gray-300 max-w-3xl mx-auto text-center leading-relaxed">
+                        Live conversation analysis for child ADHD detection
+                        through evidence-based assessment patterns. This tool
+                        assists mental health professionals in screening ADHD
+                        symptoms through natural dialogue.
                       </p>
                     </motion.div>
-                  ))}
-                </motion.div>
+                  </motion.div>
 
-                {/* Enhanced Conversation Preview with Animated Avatars */}
-                <motion.div
-                  initial={{ opacity: 0, y: 30 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.5, duration: 0.6 }}
-                  className="mb-4 max-w-2xl mx-auto"
-                >
-                  <div className="bg-white/5 backdrop-blur-xl rounded-xl p-3 border border-white/20 relative overflow-hidden">
-                    <div className="relative z-10">
-                      <motion.h3
-                        className="text-base font-bold text-white mb-3 text-center"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.7, duration: 0.6 }}
+                  {/* Features List - Therapy Session Preview */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8, duration: 0.5 }}
+                    className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full"
+                  >
+                    {[
+                      {
+                        icon: "🔍",
+                        title: "ADHD Screening",
+                        desc: "Evidence-based assessment through conversation",
+                        color: "from-blue-600/15 to-indigo-600/15",
+                        delay: 0.9,
+                      },
+                      {
+                        icon: "🧠",
+                        title: "Child Development",
+                        desc: "Age-appropriate interaction patterns",
+                        color: "from-indigo-600/15 to-blue-700/15",
+                        delay: 1.0,
+                      },
+                      {
+                        icon: "🎤",
+                        title: "Live Analysis",
+                        desc: "Real-time behavioral pattern detection",
+                        color: "from-slate-700/15 to-blue-600/15",
+                        delay: 1.1,
+                      },
+                    ].map((feature, index) => (
+                      <motion.div
+                        key={index}
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: feature.delay, duration: 0.6 }}
+                        whileHover={{ scale: 1.02 }}
+                        className={`relative text-center p-6 bg-gradient-to-br ${feature.color} backdrop-blur-sm border border-white/30 rounded-xl overflow-hidden group cursor-pointer`}
                       >
-                        AI Psychiatrist in Action
-                      </motion.h3>
+                        <div className="text-3xl mb-3">{feature.icon}</div>
+                        <h3 className="font-bold text-white mb-2 text-sm">
+                          {feature.title}
+                        </h3>
+                        <p className="text-sm text-gray-300 leading-relaxed">
+                          {feature.desc}
+                        </p>
+                      </motion.div>
+                    ))}
+                  </motion.div>
 
-                      {/* Smooth sequential conversation preview */}
-                      <div
-                        ref={conversationRef}
-                        className="max-h-32 overflow-y-auto scrollbar-hide"
-                      >
-                        <div className="space-y-2 pr-1">
-                          <AnimatePresence mode="wait">
-                            {conversationMessages
-                              .slice(0, visibleMessages)
-                              .map((message, index) => (
-                                <motion.div
-                                  key={`${index}-${visibleMessages}`}
-                                  initial={{
-                                    opacity: 0,
-                                    x: message.isUser ? -30 : 30,
-                                    y: 20,
-                                  }}
-                                  animate={{ opacity: 1, x: 0, y: 0 }}
-                                  exit={{
-                                    opacity: 0,
-                                    scale: 0.9,
-                                    transition: { duration: 0.3 },
-                                  }}
-                                  transition={{
-                                    duration: 0.8,
-                                    delay: 0.3,
-                                    type: "spring",
-                                    bounce: 0.3,
-                                  }}
-                                  className={`flex items-start gap-2 ${message.isUser ? "justify-start" : "justify-end"}`}
-                                >
-                                  {" "}
-                                  {/* User avatar */}
-                                  {message.isUser && (
+                  {/* Enhanced Conversation Preview with Animated Avatars */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.5, duration: 0.6 }}
+                    className="mb-8 max-w-4xl mx-auto w-full"
+                  >
+                    <div className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/20 relative overflow-hidden">
+                      <div className="relative z-10">
+                        <motion.h3
+                          className="text-xl font-bold text-white mb-6 text-center"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 0.7, duration: 0.6 }}
+                        >
+                          ADHD Assessment in Action
+                        </motion.h3>
+
+                        {/* Voice Conversation Preview */}
+                        <div
+                          ref={conversationRef}
+                          className="h-48 overflow-y-auto scrollbar-hide"
+                        >
+                          <div className="space-y-4 pr-2 min-h-full">
+                            <AnimatePresence>
+                              {conversationMessages
+                                .slice(0, visibleMessages)
+                                .map((message, index) => (
+                                  <motion.div
+                                    key={index}
+                                    initial={{
+                                      opacity: 0,
+                                      y: 20,
+                                      scale: 0.95,
+                                    }}
+                                    animate={{
+                                      opacity: 1,
+                                      y: 0,
+                                      scale: 1,
+                                    }}
+                                    transition={{
+                                      duration: 0.6,
+                                      delay: 0.2,
+                                      type: "spring",
+                                      bounce: 0.2,
+                                    }}
+                                    className="flex items-start gap-3"
+                                  >
+                                    {/* Speaker avatar - always visible for voice chat */}
                                     <motion.div
-                                      className="flex-shrink-0 w-6 h-6 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-full flex items-center justify-center text-xs shadow-lg"
+                                      className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-lg relative ${
+                                        message.isUser
+                                          ? "bg-gradient-to-br from-green-500 to-emerald-500"
+                                          : "bg-gradient-to-br from-blue-500 to-indigo-500"
+                                      }`}
                                       initial={{ scale: 0 }}
                                       animate={{ scale: 1 }}
                                       transition={{
-                                        delay: 0.5,
+                                        delay: 0.3,
                                         type: "spring",
                                         bounce: 0.4,
                                       }}
                                     >
-                                      😟
-                                    </motion.div>
-                                  )}
-                                  <motion.div
-                                    className={`max-w-xs px-2 py-1 rounded-lg text-xs relative ${
-                                      message.isUser
-                                        ? "bg-gradient-to-br from-blue-600/30 to-cyan-600/30 text-blue-100"
-                                        : "bg-gradient-to-br from-indigo-600/30 to-blue-600/30 text-blue-100"
-                                    } border border-white/20 shadow-lg`}
-                                    initial={{ scale: 0.8, opacity: 0 }}
-                                    animate={{ scale: 1, opacity: 1 }}
-                                    transition={{
-                                      delay: 0.4,
-                                      duration: 0.5,
-                                      type: "spring",
-                                    }}
-                                    whileHover={{ scale: 1.02 }}
-                                  >
-                                    {/* Speaking animation indicator */}
-                                    <motion.div
-                                      className="absolute -top-0.5 -right-0.5 w-2 h-2 bg-green-500 rounded-full"
-                                      initial={{ scale: 0 }}
-                                      animate={{
-                                        scale: [0, 1, 1.2, 1],
-                                        opacity: [0, 0.7, 1, 0.7],
-                                      }}
-                                      transition={{
-                                        duration: 2,
-                                        repeat: Infinity,
-                                        delay: 0.6,
-                                      }}
-                                    />
+                                      {message.isUser ? "🗣️" : "🧠"}
 
-                                    <div className="text-xs font-semibold mb-0.5 opacity-80 flex items-center gap-1">
-                                      <motion.span
-                                        initial={{ opacity: 0 }}
-                                        animate={{ opacity: 1 }}
-                                        transition={{ delay: 0.7 }}
+                                      {/* Voice indicator for current speaker */}
+                                      {index === visibleMessages - 1 && (
+                                        <motion.div
+                                          className="absolute -bottom-1 -right-1 w-4 h-4 bg-lime-500 rounded-full border-2 border-white"
+                                          animate={{
+                                            scale: [1, 1.2, 1],
+                                            opacity: [0.7, 1, 0.7],
+                                          }}
+                                          transition={{
+                                            duration: 1.5,
+                                            repeat: Infinity,
+                                          }}
+                                        >
+                                          <div className="w-full h-full bg-lime-400 rounded-full animate-pulse"></div>
+                                        </motion.div>
+                                      )}
+                                    </motion.div>
+
+                                    {/* Voice bubble with speech-like styling */}
+                                    <motion.div
+                                      className="flex-1 relative"
+                                      initial={{ scale: 0.8, opacity: 0 }}
+                                      animate={{ scale: 1, opacity: 1 }}
+                                      transition={{
+                                        delay: 0.4,
+                                        duration: 0.5,
+                                        type: "spring",
+                                      }}
+                                    >
+                                      {/* Speech bubble tail */}
+                                      <div
+                                        className={`absolute top-3 -left-2 w-0 h-0 border-t-8 border-r-8 border-b-8 border-l-0 ${
+                                          message.isUser
+                                            ? "border-t-transparent border-r-green-500/20 border-b-transparent"
+                                            : "border-t-transparent border-r-blue-500/20 border-b-transparent"
+                                        }`}
+                                      ></div>
+
+                                      <div
+                                        className={`px-4 py-3 rounded-2xl rounded-tl-sm text-sm relative ${
+                                          message.isUser
+                                            ? "bg-gradient-to-br from-green-600/20 to-emerald-600/20 text-green-100 border border-green-500/30"
+                                            : "bg-gradient-to-br from-blue-600/20 to-indigo-600/20 text-blue-100 border border-blue-500/30"
+                                        } shadow-lg backdrop-blur-sm`}
                                       >
-                                        {message.speaker}
-                                      </motion.span>
-                                      {/* Voice wave animation */}
-                                      <div className="flex items-center gap-px">
-                                        {[...Array(3)].map((_, i) => (
+                                        {/* Speaker label with voice icon */}
+                                        <div className="flex items-center gap-2 mb-2">
+                                          <span className="text-xs font-semibold opacity-90">
+                                            {message.speaker}
+                                          </span>
                                           <motion.div
-                                            key={i}
-                                            className="w-0.5 h-0.5 bg-current rounded-full"
-                                            initial={{ scale: 0 }}
-                                            animate={{
-                                              scale: [0, 1, 1.5, 1],
-                                              opacity: [0, 0.5, 1, 0.5],
-                                            }}
+                                            className="flex items-center gap-1"
+                                            animate={
+                                              index === visibleMessages - 1
+                                                ? {
+                                                    opacity: [0.5, 1, 0.5],
+                                                  }
+                                                : {}
+                                            }
                                             transition={{
                                               duration: 1.5,
                                               repeat: Infinity,
-                                              delay: 0.8 + i * 0.1,
                                             }}
-                                          />
-                                        ))}
+                                          >
+                                            🎙️
+                                            {/* Voice wave animation for current speaker */}
+                                            {index === visibleMessages - 1 && (
+                                              <div className="flex items-center gap-1 ml-1">
+                                                {[...Array(3)].map((_, i) => (
+                                                  <motion.div
+                                                    key={i}
+                                                    className="w-1 bg-white/60 rounded-full"
+                                                    animate={{
+                                                      height: [4, 12, 4],
+                                                    }}
+                                                    transition={{
+                                                      duration: 0.8,
+                                                      repeat: Infinity,
+                                                      delay: i * 0.2,
+                                                    }}
+                                                  />
+                                                ))}
+                                              </div>
+                                            )}
+                                          </motion.div>
+                                        </div>
+
+                                        {/* Message text with quotes for voice feel */}
+                                        <div className="text-sm leading-relaxed">
+                                          <motion.span
+                                            initial={{ opacity: 0 }}
+                                            animate={{ opacity: 1 }}
+                                            transition={{
+                                              delay: 0.6,
+                                              duration: 0.8,
+                                            }}
+                                          >
+                                            &ldquo;{message.text}&rdquo;
+                                          </motion.span>
+                                        </div>
                                       </div>
-                                    </div>
-
-                                    <motion.div
-                                      className="text-xs"
-                                      initial={{ opacity: 0 }}
-                                      animate={{ opacity: 1 }}
-                                      transition={{ delay: 0.9, duration: 0.6 }}
-                                    >
-                                      {message.text}
                                     </motion.div>
-
-                                    {/* Subtle glow effect */}
-                                    <motion.div
-                                      className="absolute inset-0 rounded-lg bg-gradient-to-br from-white/5 to-transparent"
-                                      initial={{ opacity: 0 }}
-                                      animate={{ opacity: [0, 0.3, 0] }}
-                                      transition={{
-                                        duration: 3,
-                                        repeat: Infinity,
-                                        delay: 1.2,
-                                      }}
-                                    />
                                   </motion.div>
-                                  {/* AI avatar */}
-                                  {!message.isUser && (
-                                    <motion.div
-                                      className="flex-shrink-0 w-6 h-6 bg-gradient-to-br from-blue-500 to-indigo-500 rounded-full flex items-center justify-center text-xs shadow-lg"
-                                      initial={{ scale: 0 }}
-                                      animate={{ scale: 1 }}
-                                      transition={{
-                                        delay: 0.5,
-                                        type: "spring",
-                                        bounce: 0.4,
-                                      }}
-                                    >
-                                      🤖
-                                    </motion.div>
-                                  )}
-                                </motion.div>
-                              ))}
-                          </AnimatePresence>
+                                ))}
+                            </AnimatePresence>
+                          </div>
                         </div>
+
+                        {/* Session indicators */}
+                        <motion.div
+                          className="mt-3 flex justify-center items-center gap-3 text-gray-400"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: 3, duration: 0.5 }}
+                        >
+                          <motion.div
+                            className="flex items-center gap-1"
+                            animate={{ opacity: [0.5, 1, 0.5] }}
+                            transition={{ duration: 2, repeat: Infinity }}
+                          >
+                            <div className="w-1 h-1 bg-lime-500 rounded-full"></div>
+                            <span className="text-xs">Active Assessment</span>
+                          </motion.div>
+                          <motion.div
+                            className="flex items-center gap-1"
+                            animate={{ opacity: [0.5, 1, 0.5] }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              delay: 0.5,
+                            }}
+                          >
+                            <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
+                            <span className="text-xs">Pattern Recognition</span>
+                          </motion.div>
+                          <motion.div
+                            className="flex items-center gap-1"
+                            animate={{ opacity: [0.5, 1, 0.5] }}
+                            transition={{
+                              duration: 2,
+                              repeat: Infinity,
+                              delay: 1,
+                            }}
+                          >
+                            <div className="w-1 h-1 bg-green-500 rounded-full"></div>
+                            <span className="text-xs">ADHD Screening</span>
+                          </motion.div>
+                        </motion.div>
                       </div>
-
-                      {/* Session indicators */}
-                      <motion.div
-                        className="mt-3 flex justify-center items-center gap-3 text-gray-400"
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 3, duration: 0.5 }}
-                      >
-                        <motion.div
-                          className="flex items-center gap-1"
-                          animate={{ opacity: [0.5, 1, 0.5] }}
-                          transition={{ duration: 2, repeat: Infinity }}
-                        >
-                          <div className="w-1 h-1 bg-green-500 rounded-full"></div>
-                          <span className="text-xs">Active Listening</span>
-                        </motion.div>
-                        <motion.div
-                          className="flex items-center gap-1"
-                          animate={{ opacity: [0.5, 1, 0.5] }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            delay: 0.5,
-                          }}
-                        >
-                          <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
-                          <span className="text-xs">Empathy Mode</span>
-                        </motion.div>
-                        <motion.div
-                          className="flex items-center gap-1"
-                          animate={{ opacity: [0.5, 1, 0.5] }}
-                          transition={{
-                            duration: 2,
-                            repeat: Infinity,
-                            delay: 1,
-                          }}
-                        >
-                          <div className="w-1 h-1 bg-blue-500 rounded-full"></div>
-                          <span className="text-xs">Therapeutic Guidance</span>
-                        </motion.div>
-                      </motion.div>
                     </div>
-                  </div>
-                </motion.div>
+                  </motion.div>
+                </div>
 
-                {/* Enhanced Start Button */}
+                {/* Button at the bottom */}
                 <motion.div
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 1.5, duration: 0.6 }}
-                  className="text-center relative"
+                  className="text-center relative mt-auto"
                 >
                   <motion.button
                     onClick={handleStart}
@@ -590,17 +629,9 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                     }
                   >
                     <span className="relative z-10 flex items-center gap-2">
-                      🎤 Begin Your Session
+                      🎤 Begin ADHD Assessment Session
                     </span>
                   </motion.button>
-
-                  <motion.p
-                    className="mt-2 text-gray-400 text-xs"
-                    initial={{ opacity: 1 }}
-                    animate={{ opacity: 1 }}
-                  >
-                    Click to start your therapeutic conversation
-                  </motion.p>
                 </motion.div>
               </motion.div>
             )}

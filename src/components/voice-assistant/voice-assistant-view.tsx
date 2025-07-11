@@ -117,11 +117,11 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
   };
 
   return (
-    <div className="h-full bg-gradient-to-br from-gray-900 via-blue-900 to-slate-900 overflow-hidden relative">
+    <div className="h-full bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 overflow-hidden relative">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
-          className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-r from-blue-500/20 to-indigo-500/20 rounded-full blur-3xl"
+          className="absolute top-20 left-20 w-96 h-96 bg-gradient-to-r from-blue-600/15 to-indigo-600/15 rounded-full blur-3xl"
           animate={{
             x: [0, 100, 0],
             y: [0, -50, 0],
@@ -134,7 +134,7 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
           }}
         />
         <motion.div
-          className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-r from-cyan-500/20 to-blue-500/20 rounded-full blur-3xl"
+          className="absolute bottom-20 right-20 w-80 h-80 bg-gradient-to-r from-indigo-600/15 to-blue-700/15 rounded-full blur-3xl"
           animate={{
             x: [0, -80, 0],
             y: [0, 30, 0],
@@ -168,7 +168,7 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
         >
-          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-200">
+          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">
             AI Psychiatrist - Voice Session
           </h1>
         </motion.div>
@@ -209,7 +209,7 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
         <AnimatePresence>
           {isLoadingSettings && (
             <motion.div
-              className="mb-6 p-6 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl border border-cyan-300/30 backdrop-blur-xl max-w-2xl w-full"
+              className="mb-6 p-6 bg-gradient-to-r from-blue-600/15 to-indigo-600/15 rounded-2xl border border-blue-300/30 backdrop-blur-xl max-w-2xl w-full"
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
@@ -217,11 +217,11 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
             >
               <div className="flex items-center gap-3">
                 <motion.div
-                  className="w-6 h-6 border-2 border-cyan-400/30 border-t-cyan-400 rounded-full"
+                  className="w-6 h-6 border-2 border-blue-400/30 border-t-blue-400 rounded-full"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                 />
-                <p className="text-cyan-200 text-lg">
+                <p className="text-blue-200 text-lg">
                   Loading voice settings...
                 </p>
               </div>
@@ -252,23 +252,23 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
                   <div
                     className={`${
                       message.role === "user"
-                        ? "bg-gradient-to-r from-green-500/30 to-emerald-500/30 border-green-300/30"
-                        : "bg-gradient-to-r from-blue-500/30 to-cyan-500/30 border-cyan-300/30"
+                        ? "bg-gradient-to-r from-lime-500/20 to-green-500/20 border-lime-300/30"
+                        : "bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border-blue-300/30"
                     } rounded-2xl border p-4 max-w-md backdrop-blur-sm`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <div
                         className={`w-2 h-2 rounded-full ${
                           message.role === "user"
-                            ? "bg-green-400"
-                            : "bg-cyan-400"
+                            ? "bg-lime-400"
+                            : "bg-blue-400"
                         }`}
                       ></div>
                       <p
                         className={`text-xs font-medium ${
                           message.role === "user"
-                            ? "text-green-200"
-                            : "text-cyan-200"
+                            ? "text-lime-200"
+                            : "text-blue-200"
                         }`}
                       >
                         {message.role === "user" ? "You" : "AI Psychiatrist"}
@@ -291,7 +291,7 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
                     className="space-y-4"
                   >
                     <div className="text-6xl mb-4">💫</div>
-                    <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-cyan-200">
+                    <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">
                       Welcome to Your AI Companion
                     </h2>
                     <p className="text-lg text-blue-200/80 max-w-md mx-auto">
@@ -299,7 +299,7 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
                       the button below to start our conversation.
                     </p>
                     <div className="flex items-center justify-center gap-2 text-blue-300/60 text-sm mt-6">
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+                      <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
                       <span>Ready to listen</span>
                     </div>
                   </motion.div>
