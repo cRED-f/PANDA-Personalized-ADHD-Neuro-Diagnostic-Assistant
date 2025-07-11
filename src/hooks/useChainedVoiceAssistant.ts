@@ -22,6 +22,7 @@ export interface ChainedVoiceAssistantState {
   response: string;
   error: string | null;
   isRecording: boolean;
+  currentSessionId: string | null;
 }
 
 export interface ChainedVoiceAssistantActions {
@@ -41,9 +42,12 @@ export const useChainedVoiceAssistant = (): ChainedVoiceAssistantState &
     response: "",
     error: null,
     isRecording: false,
+    currentSessionId: null,
   });
 
-  const [, setCurrentSessionStringId] = useState<string | null>(null);
+  const [currentSessionStringId, setCurrentSessionStringId] = useState<
+    string | null
+  >(null);
   const currentSessionIdRef = useRef<string | null>(null);
   const voiceAssistantRef = useRef<ChainedVoiceAssistant | null>(null);
 
@@ -195,6 +199,7 @@ export const useChainedVoiceAssistant = (): ChainedVoiceAssistantState &
         isSessionActive: true,
         error: null,
         status: "idle",
+        currentSessionId: sessionId,
       }));
     } catch (error) {
       console.error("Failed to start voice session:", error);

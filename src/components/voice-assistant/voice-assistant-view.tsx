@@ -1,6 +1,6 @@
 "use client";
 
-import { FC, useEffect, useState, useCallback } from "react";
+import { FC, useEffect, useState, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { IconX, IconArrowLeft, IconMicrophone } from "@tabler/icons-react";
 import { useChainedVoiceAssistant } from "../../hooks/useChainedVoiceAssistant";
@@ -18,6 +18,7 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
 }) => {
   const [userClosed, setUserClosed] = useState(false);
   const [isButtonPressed, setIsButtonPressed] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
     isSessionActive,
     isLoadingSettings,
@@ -34,8 +35,8 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
   } = useChainedVoiceAssistant();
 
   // Fetch current session messages from database
-  const sessionData = useQuery(
-    api.voiceSessions.getVoiceSession,
+  const sessionMessages = useQuery(
+    api.voiceChats.getVoiceMessages,
     currentSessionId ? { sessionId: currentSessionId } : "skip"
   );
 
@@ -51,10 +52,16 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
     }
   }, [isRecording]);
 
+  // Auto-scroll to bottom when new messages are added
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [sessionMessages?.length, transcript, response]);
+
   // Stable function references to prevent useEffect loops
   const stableStartSession = useCallback(() => {
     if (!isLoadingSettings && !isSessionActive && !error && !userClosed) {
-      console.log("🚀 Auto-starting session...");
       startSession().catch(console.error);
     }
   }, [isLoadingSettings, isSessionActive, error, userClosed, startSession]);
@@ -68,7 +75,6 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
   useEffect(() => {
     return () => {
       if (isSessionActive) {
-        console.log("🧹 Cleaning up session on unmount...");
         endSession().catch(console.error);
       }
     };
@@ -77,27 +83,13 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
 
   // Handle push-to-talk button press with stable functions
   const handlePushToTalkStart = useCallback(() => {
-    console.log(
-      "🎤 Button press START - isSessionActive:",
-      isSessionActive,
-      "isRecording:",
-      isRecording
-    );
     if (isSessionActive && !isButtonPressed) {
       setIsButtonPressed(true);
       startRecording().catch(console.error);
     }
-  }, [isSessionActive, isRecording, isButtonPressed, startRecording]);
+  }, [isSessionActive, isButtonPressed, startRecording]);
 
   const handlePushToTalkEnd = useCallback(() => {
-    console.log(
-      "🎤 Button press END - isSessionActive:",
-      isSessionActive,
-      "isRecording:",
-      isRecording,
-      "isButtonPressed:",
-      isButtonPressed
-    );
     // Always stop when button is released, regardless of other conditions
     if (isButtonPressed) {
       setIsButtonPressed(false);
@@ -106,12 +98,11 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
     if (isRecording) {
       stopRecording().catch(console.error);
     }
-  }, [isSessionActive, isRecording, isButtonPressed, stopRecording]);
+  }, [isRecording, isButtonPressed, stopRecording]);
 
   // Safety cleanup for stuck recording state
   useEffect(() => {
     if (!isButtonPressed && isRecording) {
-      console.log("🛡️ Safety cleanup: stopping stuck recording");
       stopRecording().catch(console.error);
     }
   }, [isButtonPressed, isRecording, stopRecording]);
@@ -247,12 +238,12 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.6 }}
         >
-          <div className="h-96 overflow-y-auto px-6">
+          <div className="h-[32rem] overflow-y-auto px-6 scrollbar-hide">
             <div className="space-y-4">
               {/* Messages from database */}
-              {sessionData?.messages?.map((message, index) => (
+              {sessionMessages?.map((message, index) => (
                 <motion.div
-                  key={index}
+                  key={message._id || index}
                   className={`flex ${message.role === "user" ? "justify-end" : "justify-start"}`}
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -290,58 +281,8 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
                 </motion.div>
               ))}
 
-              {/* Current transcript (live) */}
-              <AnimatePresence>
-                {transcript && (
-                  <motion.div
-                    className="flex justify-end"
-                    initial={{ opacity: 0, x: 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: 20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="bg-gradient-to-r from-green-500/30 to-emerald-500/30 rounded-2xl border border-green-300/30 p-4 max-w-md backdrop-blur-sm">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
-                        <p className="text-green-200 text-xs font-medium">
-                          You
-                        </p>
-                      </div>
-                      <p className="text-white text-sm leading-relaxed">
-                        {transcript}
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
-              {/* Current response (live) */}
-              <AnimatePresence>
-                {response && (
-                  <motion.div
-                    className="flex justify-start"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    exit={{ opacity: 0, x: -20 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    <div className="bg-gradient-to-r from-blue-500/30 to-cyan-500/30 rounded-2xl border border-cyan-300/30 p-4 max-w-md backdrop-blur-sm">
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-2 h-2 bg-cyan-400 rounded-full animate-pulse"></div>
-                        <p className="text-cyan-200 text-xs font-medium">
-                          AI Psychiatrist
-                        </p>
-                      </div>
-                      <p className="text-white text-sm leading-relaxed">
-                        {response}
-                      </p>
-                    </div>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-
               {/* Empty state */}
-              {!sessionData?.messages?.length && !transcript && !response && (
+              {!sessionMessages?.length && (
                 <div className="text-center text-white/80 py-16">
                   <motion.div
                     initial={{ opacity: 0, y: 20 }}
@@ -364,6 +305,9 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
                   </motion.div>
                 </div>
               )}
+
+              {/* Scroll anchor */}
+              <div ref={messagesEndRef} />
             </div>
           </div>
         </motion.div>
