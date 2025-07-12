@@ -6,6 +6,7 @@ export type ContentType =
   | "models"
   | "calculate-score"
   | "calculation-settings"
+  | "voice-calculate-score"
   | "import-export"
   | "voice-assistant"
   | "voice-chats"; // Add voice-chats content type

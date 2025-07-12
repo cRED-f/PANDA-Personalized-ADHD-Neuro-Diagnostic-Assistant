@@ -28,7 +28,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
       isUser: true,
     },
     {
-      speaker: "AI Psychiatrist",
+      speaker: "PANDA",
       text: "Hello! I'm Dr. Assistant. How are you feeling today?",
       isUser: false,
     },
@@ -38,7 +38,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
       isUser: true,
     },
     {
-      speaker: "AI Psychiatrist",
+      speaker: "PANDA",
       text: "Glad you're feeling fine today. What brings you here - is there something specific you'd like to talk about?",
       isUser: false,
     },
@@ -48,7 +48,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
       isUser: true,
     },
     {
-      speaker: "AI Psychiatrist",
+      speaker: "PANDA",
       text: "Thanks for sharing about your son - I'd really like to understand him better. Could you tell me his name and how old he is?",
       isUser: false,
     },
@@ -58,7 +58,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
       isUser: true,
     },
     {
-      speaker: "AI Psychiatrist",
+      speaker: "PANDA",
       text: "Thank you for telling me about Fahim. Just two more quick things - what grade is he in, and could you share what specific concerns you have about him?",
       isUser: false,
     },
@@ -68,7 +68,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
       isUser: true,
     },
     {
-      speaker: "AI Psychiatrist",
+      speaker: "PANDA",
       text: "I hear how concerned you are about Fahim's focus during study time. When he's trying to do homework, what kinds of things tend to distract him the most?",
       isUser: false,
     },
@@ -324,7 +324,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                       transition={{ delay: 0.6, duration: 0.6 }}
                       className="text-3xl font-bold text-white mb-2"
                     >
-                      AI Psychiatrist Voice Assistant
+                      PANDA Voice Assistant
                     </motion.h1>
 
                     {/* Fixed subtitle without shaking */}
@@ -335,7 +335,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                       className="h-16 flex mt-6 items-center justify-center mb-6"
                     >
                       <p className="text-lg text-gray-300 max-w-3xl mx-auto text-center leading-relaxed">
-                        Live conversation analysis for child ADHD detection
+                        Live conversation analysis for Kids ADHD detection
                         through evidence-based assessment patterns. This tool
                         assists mental health professionals in screening ADHD
                         symptoms through natural dialogue.

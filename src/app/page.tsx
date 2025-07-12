@@ -12,6 +12,7 @@ import { WithTooltip } from "@/components/ui/with-tooltip";
 import { motion, AnimatePresence } from "framer-motion";
 import { ContentType } from "@/types";
 import { CalculationInterface } from "@/components/calculation/calculation-interface";
+import { VoiceCalculationInterface } from "@/components/calculation/voice-calculation-interface";
 import { VoiceAssistantModal } from "@/components/voice-assistant/voice-assistant-modal";
 
 function HomeContent() {
@@ -38,6 +39,12 @@ function HomeContent() {
         return (
           <CalculationInterface
             selectedChatId={selectedCalculationChatId}
+            selectedSessionId={selectedCalculationSessionId}
+          />
+        );
+      case "voice-calculate-score":
+        return (
+          <VoiceCalculationInterface
             selectedSessionId={selectedCalculationSessionId}
           />
         );
@@ -105,6 +112,16 @@ function HomeContent() {
     setSelectedCalculationChatId(null); // Clear text chat when voice session is selected
     setCurrentContentType("calculate-score");
   }, []);
+
+  // Handler for voice calculation session selection
+  const handleSelectVoiceCalculationSession = useCallback(
+    (sessionId: string) => {
+      setSelectedCalculationSessionId(sessionId);
+      setSelectedCalculationChatId(null); // Clear text chat when voice session is selected
+      setCurrentContentType("voice-calculate-score");
+    },
+    []
+  );
 
   // Set current chat to first available chat if none is selected and chats exist
   // Also validate that saved chat ID still exists
@@ -196,6 +213,9 @@ function HomeContent() {
             onContentTypeChange={setCurrentContentType}
             onSelectCalculationChat={handleSelectCalculationChat}
             onSelectCalculationSession={handleSelectCalculationSession}
+            onSelectVoiceCalculationSession={
+              handleSelectVoiceCalculationSession
+            }
             onSelectVoiceChat={handleSelectVoiceChat}
           />
         </div>
@@ -240,7 +260,8 @@ function HomeContent() {
         className={`h-full flex flex-col ${
           sidebarVisible &&
           (currentContentType === "calculate-score" ||
-            currentContentType === "calculation-settings")
+            currentContentType === "calculation-settings" ||
+            currentContentType === "voice-calculate-score")
             ? "ml-[400px]"
             : sidebarVisible && currentContentType !== "voice-assistant"
               ? "ml-80"

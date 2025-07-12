@@ -26,11 +26,14 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
   const [temperatures, setTemperatures] = useState([0.7, 0.7, 0.7, 0.7]);
 
   // Single model state
-  const [singleModelName, setSingleModelName] = useState("gpt-4o-mini");
+  const [singleModelName, setSingleModelName] = useState("gpt-4o");
   const [singleModelTemperature, setSingleModelTemperature] = useState(0.7);
 
   // Calculation API key state
   const [calculationApiKey, setCalculationApiKey] = useState("");
+
+  // Calculation provider state
+  const [calculationProvider, setCalculationProvider] = useState("OpenRouter");
 
   // Query to get calculation settings from database
   const calculationSettings = useQuery(
@@ -51,6 +54,7 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
         singleModelName: savedSingleModelName,
         singleModelTemperature: savedSingleModelTemperature,
         calculationApiKey: savedCalculationApiKey,
+        calculationProvider: savedCalculationProvider,
       } = calculationSettings;
 
       if (savedModelNames) setModelNames(savedModelNames);
@@ -59,6 +63,9 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
       if (savedSingleModelTemperature !== undefined)
         setSingleModelTemperature(savedSingleModelTemperature);
       if (savedCalculationApiKey) setCalculationApiKey(savedCalculationApiKey);
+      if (savedCalculationProvider)
+        setCalculationProvider(savedCalculationProvider);
+      else setCalculationProvider("OpenRouter"); // Default to OpenRouter for backward compatibility
     }
   }, [calculationSettings]);
 
@@ -74,6 +81,7 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
         singleModelName,
         singleModelTemperature,
         calculationApiKey,
+        calculationProvider,
       });
       setIsEditing(false);
       console.log("Settings saved successfully");
@@ -92,6 +100,23 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
         <h3 className="text-md font-medium text-gray-800 border-b pb-2 mb-4">
           Multi-Model Settings
         </h3>
+        <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
+          <p className="text-sm text-blue-800">
+            <strong>Provider: {calculationProvider}</strong>
+            {calculationProvider === "OpenAI" ? (
+              <span>
+                {" "}
+                - Use OpenAI model names like: gpt-4o, gpt-4, gpt-3.5-turbo
+              </span>
+            ) : (
+              <span>
+                {" "}
+                - Use OpenRouter model names like: gpt-4o-mini,
+                anthropic/claude-3.5-sonnet, meta-llama/llama-3.1-8b-instruct
+              </span>
+            )}
+          </p>
+        </div>
         {modelNames.map((modelName, index) => (
           <div key={index}>
             <Label htmlFor={`model-name-${index}`}>
@@ -140,7 +165,11 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
             onChange={(e) => setSingleModelName(e.target.value)}
             disabled={!isEditing}
             className="mt-1"
-            placeholder="e.g., gpt-4o-mini, gpt-4, claude-3-sonnet"
+            placeholder={
+              calculationProvider === "OpenAI"
+                ? "e.g., gpt-4o, gpt-4, gpt-3.5-turbo"
+                : "e.g., gpt-4o-mini, anthropic/claude-3.5-sonnet, meta-llama/llama-3.1-8b-instruct"
+            }
           />
         </div>
         <div>
@@ -166,6 +195,23 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
           API Configuration
         </h3>
         <div>
+          <Label htmlFor="calculation-provider">AI Provider</Label>
+          <select
+            id="calculation-provider"
+            value={calculationProvider}
+            onChange={(e) => setCalculationProvider(e.target.value)}
+            disabled={!isEditing}
+            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+          >
+            <option value="OpenRouter">OpenRouter</option>
+            <option value="OpenAI">OpenAI</option>
+          </select>
+          <p className="text-xs text-gray-500 mt-1">
+            Choose the AI provider for calculations. Different providers may
+            have different available models.
+          </p>
+        </div>
+        <div>
           <Label htmlFor="calculation-api-key">Calculation API Key</Label>
           <Input
             id="calculation-api-key"
@@ -174,7 +220,7 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
             onChange={(e) => setCalculationApiKey(e.target.value)}
             disabled={!isEditing}
             className="mt-1"
-            placeholder="Enter API key for calculations (optional)"
+            placeholder={`Enter ${calculationProvider} API key for calculations (optional)`}
           />
           <p className="text-xs text-gray-500 mt-1">
             Use a different API key specifically for calculations. Leave empty

@@ -13,6 +13,7 @@ import { ModelPresets } from "../settings/model-presets";
 import { PromptsManager } from "../prompts/prompts-manager";
 import CalculationSettings from "../calculation/calculation-settings";
 import CalculateScore from "../calculation/calculate-score";
+import VoiceCalculateScore from "../calculation/voice-calculate-score";
 import { ImportExportManager } from "../import-export/import-export-manager";
 import { motion } from "framer-motion";
 
@@ -23,6 +24,7 @@ interface SidebarContentProps {
   onToggleSidebar?: () => void;
   onSelectCalculationChat?: (chatId: string) => void;
   onSelectCalculationSession?: (sessionId: string) => void;
+  onSelectVoiceCalculationSession?: (sessionId: string) => void;
   onSelectVoiceChat?: (sessionId: string) => void;
   isVoiceAssistantActive?: boolean;
 }
@@ -34,6 +36,7 @@ export const SidebarContent: FC<SidebarContentProps> = ({
   onToggleSidebar,
   onSelectCalculationChat,
   onSelectCalculationSession,
+  onSelectVoiceCalculationSession,
   onSelectVoiceChat,
   isVoiceAssistantActive = false,
 }) => {
@@ -235,6 +238,54 @@ export const SidebarContent: FC<SidebarContentProps> = ({
       );
     }
 
+    // Special handling for voice calculate score
+    if (contentType === "voice-calculate-score") {
+      return (
+        <motion.div
+          className="flex h-full flex-col bg-white/90 backdrop-blur-xl "
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          {/* Header with Hide Button */}
+          <motion.div
+            className="flex items-center justify-between border-b border-white/20 p-3"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+          >
+            <h2 className="text-sm font-medium text-white">
+              Voice Calculate Score SIDEBAR
+            </h2>
+            {onToggleSidebar && (
+              <motion.div whileHover={{ scale: 1.1 }} whileTap={{ scale: 0.9 }}>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 rounded-md text-gray-500 hover:bg-white/50 hover:text-gray-700 transition-colors duration-200"
+                  onClick={onToggleSidebar}
+                >
+                  <IconChevronLeft size={16} />
+                </Button>
+              </motion.div>
+            )}
+          </motion.div>
+
+          {/* Voice Calculate Score Content */}
+          <motion.div
+            className="flex-1 overflow-y-auto"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.3 }}
+          >
+            <VoiceCalculateScore
+              onSelectVoiceCalculationSession={onSelectVoiceCalculationSession}
+            />
+          </motion.div>
+        </motion.div>
+      );
+    }
+
     return (
       <motion.div
         className="flex h-full flex-col bg-white/90 backdrop-blur-xl"
@@ -327,6 +378,8 @@ export const SidebarContent: FC<SidebarContentProps> = ({
       return renderSidebarContent("import-export", [], []);
     case "calculate-score":
       return renderSidebarContent("calculate-score", [], []);
+    case "voice-calculate-score":
+      return renderSidebarContent("voice-calculate-score", [], []);
 
     default:
       return null;

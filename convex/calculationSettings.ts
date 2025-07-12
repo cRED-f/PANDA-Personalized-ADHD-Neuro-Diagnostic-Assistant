@@ -17,6 +17,7 @@ export const saveCalculationSettings = mutation({
     singleModelName: v.optional(v.string()), // Single model name
     singleModelTemperature: v.optional(v.number()), // Single model temperature
     calculationApiKey: v.optional(v.string()), // API key for calculations
+    calculationProvider: v.optional(v.string()), // AI provider ("OpenRouter" or "OpenAI")
   },
   handler: async (ctx, args) => {
     const now = Date.now();
@@ -32,6 +33,7 @@ export const saveCalculationSettings = mutation({
         singleModelName: args.singleModelName,
         singleModelTemperature: args.singleModelTemperature,
         calculationApiKey: args.calculationApiKey,
+        calculationProvider: args.calculationProvider,
         updatedAt: now,
       });
       return existingSettings._id;
@@ -43,6 +45,7 @@ export const saveCalculationSettings = mutation({
         singleModelName: args.singleModelName,
         singleModelTemperature: args.singleModelTemperature,
         calculationApiKey: args.calculationApiKey,
+        calculationProvider: args.calculationProvider,
         createdAt: now,
         updatedAt: now,
       });

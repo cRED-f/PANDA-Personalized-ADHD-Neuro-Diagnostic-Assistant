@@ -175,7 +175,7 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
           transition={{ delay: 0.2, duration: 0.6 }}
         >
           <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">
-            AI Psychiatrist - Voice Session
+            PANDA - Voice Session
           </h1>
         </motion.div>
 
@@ -277,7 +277,7 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
                             : "text-blue-200"
                         }`}
                       >
-                        {message.role === "user" ? "You" : "AI Psychiatrist"}
+                        {message.role === "user" ? "You" : "PANDA"}
                       </p>
                     </div>
                     <p className="text-white text-sm leading-relaxed">

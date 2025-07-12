@@ -357,3 +357,22 @@ export const saveVoiceCombinedText = mutation({
     }
   },
 });
+
+// Debug function to check database contents
+export const debugVoiceChats = query({
+  handler: async (ctx) => {
+    const voiceChats = await ctx.db.query("voiceChats").collect();
+    const voiceMessages = await ctx.db.query("voiceMessages").collect();
+
+    console.log("📊 Database Debug Info:");
+    console.log("Voice Chats:", voiceChats.length, voiceChats);
+    console.log("Voice Messages:", voiceMessages.length, voiceMessages);
+
+    return {
+      voiceChatsCount: voiceChats.length,
+      voiceChats: voiceChats,
+      voiceMessagesCount: voiceMessages.length,
+      voiceMessages: voiceMessages.slice(0, 5), // Just show first 5 messages
+    };
+  },
+});

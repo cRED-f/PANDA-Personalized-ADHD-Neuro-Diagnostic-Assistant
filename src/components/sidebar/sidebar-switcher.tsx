@@ -10,6 +10,7 @@ import {
   IconAdjustments,
   IconDownload,
   IconMicrophone,
+  IconDeviceRemoteFilled,
 } from "@tabler/icons-react";
 import { FC } from "react";
 import { TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -68,6 +69,18 @@ export const SidebarSwitcher: FC<SidebarSwitcherProps> = ({
             tooltip="Calculate Score"
             color="from-orange-500 to-amber-600"
             hoverColor="hover:from-orange-600 hover:to-amber-700"
+          />
+          <SidebarSwitchItem
+            icon={
+              <div className="relative">
+                <IconDeviceRemoteFilled size={20} />
+              </div>
+            }
+            contentType="voice-calculate-score"
+            onContentTypeChange={onContentTypeChange}
+            tooltip="Voice Calculate Score"
+            color="from-purple-500 to-violet-600"
+            hoverColor="hover:from-purple-600 hover:to-violet-700"
           />
           <SidebarSwitchItem
             icon={<IconAdjustments size={20} />}

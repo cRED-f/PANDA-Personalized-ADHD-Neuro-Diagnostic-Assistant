@@ -16,6 +16,7 @@ interface SidebarProps {
   onContentTypeChange?: (contentType: ContentType) => void;
   onSelectCalculationChat?: (chatId: string) => void;
   onSelectCalculationSession?: (sessionId: string) => void;
+  onSelectVoiceCalculationSession?: (sessionId: string) => void;
   onSelectVoiceChat?: (sessionId: string) => void;
 }
 
@@ -28,6 +29,7 @@ export const Sidebar: FC<SidebarProps> = ({
   onContentTypeChange,
   onSelectCalculationChat,
   onSelectCalculationSession,
+  onSelectVoiceCalculationSession,
   onSelectVoiceChat,
 }) => {
   const [currentContentType, setCurrentContentType] =
@@ -148,7 +150,8 @@ export const Sidebar: FC<SidebarProps> = ({
           {/* Special floating sidebar for calculation modes */}
           {showSidebar &&
             (currentContentType === "calculate-score" ||
-              currentContentType === "calculation-settings") && (
+              currentContentType === "calculation-settings" ||
+              currentContentType === "voice-calculate-score") && (
               <motion.div
                 className="fixed left-24 top-1/2 transform -translate-y-1/2 w-80 h-[85vh] z-30"
                 initial={{ x: -50, opacity: 0, scale: 0.95 }}
@@ -170,6 +173,19 @@ export const Sidebar: FC<SidebarProps> = ({
                         onToggleSidebar={onToggleSidebar}
                         onSelectCalculationChat={onSelectCalculationChat}
                         onSelectCalculationSession={onSelectCalculationSession}
+                        onSelectVoiceChat={onSelectVoiceChat}
+                      />
+                    </TabsContent>
+                    <TabsContent
+                      value="voice-calculate-score"
+                      className="h-full p-0"
+                    >
+                      <SidebarContent
+                        contentType="voice-calculate-score"
+                        onToggleSidebar={onToggleSidebar}
+                        onSelectVoiceCalculationSession={
+                          onSelectVoiceCalculationSession
+                        }
                         onSelectVoiceChat={onSelectVoiceChat}
                       />
                     </TabsContent>

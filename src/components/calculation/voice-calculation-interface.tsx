@@ -3,7 +3,7 @@
 import { FC, useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation } from "convex/react";
 import { api } from "../../../convex/_generated/api";
-import { IconCalculator, IconX, IconTrash } from "@tabler/icons-react";
+import { IconMicrophone, IconX, IconTrash } from "@tabler/icons-react";
 import { useAI, AIProvider } from "@/hooks/useAI";
 import { OpenRouterMessage } from "@/lib/openrouter";
 import { OpenAIMessage } from "@/lib/openai";
@@ -12,16 +12,15 @@ import {
   filterAIMessageForCalculation,
 } from "@/lib/utils";
 
-interface CalculationInterfaceProps {
-  selectedChatId?: string | null;
+interface VoiceCalculationInterfaceProps {
+  selectedSessionId?: string | null;
 }
 
-export const CalculationInterface: FC<CalculationInterfaceProps> = ({
-  selectedChatId,
+export const VoiceCalculationInterface: FC<VoiceCalculationInterfaceProps> = ({
+  selectedSessionId,
 }) => {
   const [showModal, setShowModal] = useState(false);
   const [selectedPrompts, setSelectedPrompts] = useState<string[]>([]);
-  const [analysisStarted, setAnalysisStarted] = useState(false);
   const [analysisResults, setAnalysisResults] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
@@ -73,33 +72,41 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
     modelPrompts4,
   ];
 
-  const chats = useQuery(api.messages.getChats) || [];
-  const selectedChat = chats.find((chat) => chat._id === selectedChatId);
+  const voiceChats = useQuery(api.voiceChats.getAllVoiceChats) || [];
+  const selectedVoiceChat = voiceChats.find(
+    (chat) => chat.sessionId === selectedSessionId
+  );
 
   const conversationHistory = useQuery(
-    api.messages.getConversationHistory,
-    selectedChatId ? { chatId: selectedChatId } : "skip"
+    api.voiceAnalyses.getVoiceConversationHistory,
+    selectedSessionId ? { sessionId: selectedSessionId } : "skip"
   );
 
   const existingAnalysis = useQuery(
-    api.analyses.getChatAnalysis,
-    selectedChatId ? { chatId: selectedChatId } : "skip"
+    api.voiceAnalyses.getVoiceChatAnalysis,
+    selectedSessionId ? { sessionId: selectedSessionId } : "skip"
   );
 
   // Make Text Analysis queries and mutations
   const existingMakeTextAnalysis = useQuery(
-    api.messages.getMakeTextAnalysis,
-    selectedChatId ? { chatId: selectedChatId } : "skip"
+    api.voiceAnalyses.getVoiceMakeTextAnalysis,
+    selectedSessionId ? { sessionId: selectedSessionId } : "skip"
   );
 
-  const saveMakeTextAnalysis = useMutation(api.messages.saveMakeTextAnalysis);
-  const saveCombinedText = useMutation(api.messages.saveCombinedText);
-  const deleteMakeTextAnalysis = useMutation(
-    api.messages.deleteMakeTextAnalysis
+  const saveVoiceMakeTextAnalysis = useMutation(
+    api.voiceAnalyses.saveVoiceMakeTextAnalysis
+  );
+  const saveVoiceCombinedText = useMutation(
+    api.voiceAnalyses.saveVoiceCombinedText
+  );
+  const deleteVoiceMakeTextAnalysis = useMutation(
+    api.voiceAnalyses.deleteVoiceMakeTextAnalysis
   );
 
-  const saveAnalysis = useMutation(api.analyses.saveAnalysis);
-  const deleteAnalysis = useMutation(api.analyses.deleteAnalysis);
+  const saveVoiceAnalysis = useMutation(api.voiceAnalyses.saveVoiceAnalysis);
+  const deleteVoiceAnalysis = useMutation(
+    api.voiceAnalyses.deleteVoiceAnalysis
+  );
 
   // Get provider and API key from calculation settings
   const provider: AIProvider =
@@ -144,8 +151,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   );
 
   useEffect(() => {
-    if (existingAnalysis) {
-      setAnalysisStarted(true);
+    if (existingAnalysis && existingAnalysis.length > 0) {
       setAnalysisResults(existingAnalysis.map((a) => a.result));
       setSelectedPrompts(existingAnalysis.map((a) => a.promptId));
       setIsAnalyzing(false);
@@ -153,7 +159,6 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
     } else if (existingMakeTextAnalysis) {
       // Handle Make Text Analysis
       setMakeTextMode(true);
-      setAnalysisStarted(true);
       setAnalysisResults(
         existingMakeTextAnalysis.analysisResults.map((a) => a.result)
       );
@@ -163,7 +168,6 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       setIsAnalyzing(false);
       setAnalysisError(null);
     } else {
-      setAnalysisStarted(false);
       setAnalysisResults([]);
       setAnalysisError(null);
       setSelectedPrompts([]);
@@ -171,7 +175,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       setMakeTextMode(false);
     }
   }, [
-    selectedChatId,
+    selectedSessionId,
     existingAnalysis,
     existingMakeTextAnalysis,
     conversationHistory,
@@ -190,7 +194,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
     setSelectedPrompts(newSelectedPrompts);
   };
 
-  // Function to create combined text from conversation with exchange numbers
+  // Function to create combined text from voice conversation with exchange numbers
   const createMakeText = useCallback(() => {
     if (!conversationHistory) return "";
 
@@ -243,7 +247,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
 
   // Handle Make Text button click - create and save combined text first
   const handleMakeTextClick = async () => {
-    if (!conversationHistory || !selectedChatId) return;
+    if (!conversationHistory || !selectedSessionId) return;
 
     try {
       setIsAnalyzing(true);
@@ -251,25 +255,25 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       // Create the combined text
       const makeText = createMakeText();
 
-      console.log("📝 Creating and saving combined text:", {
+      console.log("📝 Creating and saving voice combined text:", {
         textLength: makeText.length,
         textPreview:
           makeText.substring(0, 500) + (makeText.length > 500 ? "..." : ""),
       });
 
       // Save combined text to database first
-      await saveCombinedText({
-        chatId: selectedChatId,
+      await saveVoiceCombinedText({
+        sessionId: selectedSessionId,
         combinedText: makeText,
       });
 
-      console.log("✅ Combined text saved successfully");
+      console.log("✅ Voice combined text saved successfully");
 
       // Now show the modal for prompt selection
       setShowModal(true);
       setMakeTextMode(true);
     } catch (error) {
-      console.error("Error creating/saving combined text:", error);
+      console.error("Error creating/saving voice combined text:", error);
       setAnalysisError(
         error instanceof Error
           ? `Failed to create combined text: ${error.message}`
@@ -281,10 +285,10 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   };
 
   const handleMakeTextAnalysis = async () => {
-    if (!conversationHistory || !calculationSettings || !selectedChatId) return;
+    if (!conversationHistory || !calculationSettings || !selectedSessionId)
+      return;
 
     setMakeTextMode(true);
-    setAnalysisStarted(true);
     setIsAnalyzing(true);
     setAnalysisError(null);
     setShowModal(false);
@@ -301,7 +305,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       const makeText = makeTextData.combinedText;
 
       // Console log the make text data
-      console.log("📝 Make Text Analysis - Using saved combined text:", {
+      console.log("📝 Voice Make Text Analysis - Using saved combined text:", {
         textLength: makeText.length,
         textPreview:
           makeText.substring(0, 500) + (makeText.length > 500 ? "..." : ""),
@@ -363,8 +367,8 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
           });
 
           // Save analysis with make text mode flag (for compatibility)
-          await saveAnalysis({
-            chatId: selectedChatId,
+          await saveVoiceAnalysis({
+            sessionId: selectedSessionId,
             promptId,
             promptName: prompt.name,
             promptContent: prompt.content,
@@ -376,17 +380,19 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       }
 
       // Update the Make Text Analysis in the database with results
-      await saveMakeTextAnalysis({
-        chatId: selectedChatId,
+      await saveVoiceMakeTextAnalysis({
+        sessionId: selectedSessionId,
         combinedText: makeText,
         analysisResults: analysisResults,
       });
 
       setAnalysisResults(results);
     } catch (error) {
-      console.error("Make text analysis error:", error);
+      console.error("Voice make text analysis error:", error);
       setAnalysisError(
-        error instanceof Error ? error.message : "Make text analysis failed"
+        error instanceof Error
+          ? error.message
+          : "Voice make text analysis failed"
       );
     } finally {
       setIsAnalyzing(false);
@@ -398,7 +404,6 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       return;
 
     setSingleModelMode(true);
-    setAnalysisStarted(true);
     setIsAnalyzing(true);
     setAnalysisError(null);
     setShowModal(false);
@@ -493,9 +498,9 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       if (result) {
         setSingleModelResult(result);
 
-        if (selectedChatId) {
-          await saveAnalysis({
-            chatId: selectedChatId,
+        if (selectedSessionId) {
+          await saveVoiceAnalysis({
+            sessionId: selectedSessionId,
             promptId: selectedSinglePrompt,
             promptName: prompt?.name || "Single Model Prompt",
             promptContent: prompt?.content || "",
@@ -506,9 +511,11 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
         }
       }
     } catch (error) {
-      console.error("Single model analysis error:", error);
+      console.error("Voice single model analysis error:", error);
       setAnalysisError(
-        error instanceof Error ? error.message : "Single model analysis failed"
+        error instanceof Error
+          ? error.message
+          : "Voice single model analysis failed"
       );
     } finally {
       setIsAnalyzing(false);
@@ -517,7 +524,6 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
 
   const handleStartAnalysis = async () => {
     if (!conversationHistory || !calculationSettings) return;
-    setAnalysisStarted(true);
     setIsAnalyzing(true);
     setAnalysisError(null);
     setShowModal(false);
@@ -624,13 +630,13 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
       setAnalysisResults(
         results.filter((result): result is string => result !== null)
       );
-      if (selectedChatId) {
+      if (selectedSessionId) {
         await Promise.all(
           results.map(async (result, index) => {
             const promptId = selectedPrompts[index];
             const prompt = allPrompts.find((p) => p._id === promptId);
-            await saveAnalysis({
-              chatId: selectedChatId,
+            await saveVoiceAnalysis({
+              sessionId: selectedSessionId,
               promptId,
               promptName: prompt?.name || "Unknown Prompt",
               promptContent: prompt?.content || "",
@@ -644,16 +650,16 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
         );
       }
     } catch (error) {
-      console.error("Analysis error:", error);
+      console.error("Voice analysis error:", error);
       setAnalysisError(
-        error instanceof Error ? error.message : "Analysis failed"
+        error instanceof Error ? error.message : "Voice analysis failed"
       );
     } finally {
       setIsAnalyzing(false);
     }
   };
 
-  // Format analysis result for better display
+  // Format analysis result for better display (same as text interface)
   const formatAnalysisResult = (result: string) => {
     let cleanedResult = result;
 
@@ -765,12 +771,11 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
   };
 
   const handleDeleteAndRestart = async () => {
-    if (selectedChatId) {
+    if (selectedSessionId) {
       try {
-        await deleteAnalysis({ chatId: selectedChatId });
-        await deleteMakeTextAnalysis({ chatId: selectedChatId });
+        await deleteVoiceAnalysis({ sessionId: selectedSessionId });
+        await deleteVoiceMakeTextAnalysis({ sessionId: selectedSessionId });
         // Reset all state
-        setAnalysisStarted(false);
         setAnalysisResults([]);
         setAnalysisError(null);
         setSelectedPrompts([]);
@@ -781,8 +786,8 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
         setSingleModelResult("");
         setMakeTextMode(false);
       } catch (error) {
-        console.error("Error deleting analysis:", error);
-        setAnalysisError("Failed to delete analysis");
+        console.error("Error deleting voice analysis:", error);
+        setAnalysisError("Failed to delete voice analysis");
       }
     }
   };
@@ -880,111 +885,93 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between border-b border-slate-200/60 p-6 flex-shrink-0 bg-white">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-slate-600 rounded-lg flex items-center justify-center">
-            <IconCalculator size={20} className="text-white" />
+          <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+            <IconMicrophone size={20} className="text-white" />
           </div>
           <div>
             <h2 className="text-xl font-bold text-slate-800">
-              Calculate Score
+              Voice Calculate Score
             </h2>
             <p className="text-sm text-slate-500">
-              {selectedChatId
-                ? "Analyze your conversation"
-                : "Select a chat to analyze"}
+              {selectedSessionId
+                ? "Analyze your voice conversation"
+                : "Select a voice chat to analyze"}
             </p>
           </div>
         </div>
       </div>
 
-      {!selectedChatId ? (
+      {!selectedSessionId ? (
         <div className="flex-1 relative overflow-hidden transition-all duration-300 ease-in-out">
           <div className="absolute inset-0">
-            <div className="w-full h-full bg-gradient-to-br from-slate-100 via-white to-slate-50 blur-lg transform scale-110"></div>
+            <div className="w-full h-full bg-gradient-to-br from-purple-100 via-white to-purple-50 blur-lg transform scale-110"></div>
           </div>
           <div className="relative z-20 flex flex-col items-center justify-center h-full text-center p-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
             <h3 className="text-xl font-semibold text-slate-800 mb-3">
-              No Chat Selected
+              No Voice Chat Selected
             </h3>
             <p className="text-slate-500 max-w-sm leading-relaxed">
-              Click the arrow button on a chat to start analysis.
+              Click the arrow button on a voice chat to start analysis.
             </p>
           </div>
         </div>
-      ) : !analysisStarted ? (
-        <>
-          <div className="flex-1 relative overflow-hidden">
-            <div className="absolute inset-0">
-              <div className="w-full h-full bg-gradient-to-br from-slate-100 via-white to-slate-50 blur-lg transform scale-110"></div>
-            </div>
-            <div className="relative z-20 flex flex-col items-center justify-center h-full text-center p-6">
-              <h3 className="text-xl font-semibold text-slate-800 mb-3">
-                {selectedChat?.title || "Ready to Analyze"}
-              </h3>
-              <p className="text-slate-500 max-w-sm leading-relaxed">
-                Start the analysis to calculate scores and get insights from
-                this conversation.
-              </p>
-            </div>
-          </div>
-          <div className="border-t border-slate-200/60 p-6 flex-shrink-0 bg-white">
-            <div className="space-y-3">
-              <button
-                onClick={handleStartAnalysisClick}
-                className="w-full bg-slate-600 hover:bg-slate-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
-              >
-                Start Multi-Model Analysis
-              </button>
-              <button
-                onClick={() => {
-                  setShowModal(true);
-                  setSingleModelMode(true);
-                }}
-                className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
-              >
-                Start Single Model Analysis
-              </button>
-              <button
-                onClick={handleMakeTextClick}
-                className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
-              >
-                Make Text Analysis
-              </button>
-            </div>
-          </div>
-        </>
-      ) : (
+      ) : selectedSessionId ? (
         <div className="flex-1 bg-white overflow-hidden">
           {isAnalyzing || isGenerating ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6 animate-in fade-in duration-500">
               <h3 className="text-xl font-semibold text-slate-800 mb-3">
-                Analyzing: {selectedChat?.title}
+                Analyzing: {selectedVoiceChat?.title}
               </h3>
               <p className="text-slate-500 max-w-sm leading-relaxed mb-4">
-                Analysis is in progress. Please wait while we calculate scores
-                and generate insights.
+                Voice analysis is in progress. Please wait while we calculate
+                scores and generate insights.
               </p>
-              <div className="flex items-center space-x-2 text-blue-600 animate-in fade-in duration-500 delay-500">
-                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
+              <div className="flex items-center space-x-2 text-purple-600 animate-in fade-in duration-500 delay-500">
+                <div className="w-2 h-2 bg-purple-600 rounded-full animate-bounce"></div>
               </div>
             </div>
           ) : analysisError ? (
             <div className="flex flex-col items-center justify-center h-full text-center p-6">
               <h3 className="text-xl font-semibold text-slate-800 mb-3">
-                Analysis Failed
+                Voice Analysis Failed
               </h3>
               <p className="text-red-500 max-w-md leading-relaxed mb-6">
                 {analysisError}
               </p>
+              {/* Show buttons even after error */}
+              <div className="w-full max-w-md space-y-3">
+                <button
+                  onClick={handleStartAnalysisClick}
+                  className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
+                >
+                  Start Multi-Model Analysis
+                </button>
+                <button
+                  onClick={() => {
+                    setShowModal(true);
+                    setSingleModelMode(true);
+                  }}
+                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
+                >
+                  Start Single Model Analysis
+                </button>
+                <button
+                  onClick={handleMakeTextClick}
+                  className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
+                >
+                  Make Text Analysis
+                </button>
+              </div>
             </div>
           ) : analysisResults.length > 0 || singleModelResult ? (
             <div className="h-full flex flex-col">
               <div className="flex items-center justify-between border-b border-slate-200/60 p-6 flex-shrink-0">
                 <h3 className="text-lg font-bold text-slate-800">
                   {singleModelMode
-                    ? "Single Model Analysis Complete"
+                    ? "Voice Single Model Analysis Complete"
                     : makeTextMode
-                      ? "Make Text Analysis Complete"
-                      : "Multi-Model Analysis Complete"}
+                      ? "Voice Make Text Analysis Complete"
+                      : "Voice Multi-Model Analysis Complete"}
                 </h3>
                 <button
                   onClick={handleDeleteAndRestart}
@@ -999,14 +986,14 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                 {/* Left Panel - Analysis Results (70%) */}
                 <div className="w-[70%] overflow-y-auto p-6 bg-white">
                   <h4 className="font-bold text-slate-800 mb-4">
-                    Analysis Results
+                    Voice Analysis Results
                   </h4>
 
                   {analysisResults.length > 0 || singleModelResult ? (
                     <div className="space-y-6">
                       {singleModelMode && singleModelResult ? (
                         // Single model result display
-                        <div className="max-w-none bg-slate-50 rounded-lg border border-slate-200 shadow-sm">
+                        <div className="max-w-none bg-purple-50 rounded-lg border border-purple-200 shadow-sm">
                           <div className="p-6">
                             <div className="mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between">
                               <span className="font-semibold text-slate-700">
@@ -1033,7 +1020,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                         analysisResults.map((result, index) => (
                           <div
                             key={index}
-                            className="max-w-none bg-slate-50 rounded-lg border border-slate-200 shadow-sm"
+                            className="max-w-none bg-purple-50 rounded-lg border border-purple-200 shadow-sm"
                           >
                             <div className="p-6">
                               <div className="mb-2 flex flex-col sm:flex-row sm:items-center sm:justify-between">
@@ -1057,24 +1044,24 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                   ) : (
                     <div className="flex flex-col items-center justify-center h-full text-center">
                       <p className="text-slate-500 max-w-sm leading-relaxed">
-                        Analysis results will appear here after running the
-                        analysis.
+                        Voice analysis results will appear here after running
+                        the analysis.
                       </p>
                     </div>
                   )}
                 </div>
 
                 {/* Right Panel - Combined Text (30%) */}
-                <div className="w-[30%] border-l border-slate-200 overflow-y-auto p-6 bg-slate-50">
+                <div className="w-[30%] border-l border-slate-200 overflow-y-auto p-6 bg-purple-50">
                   <h4 className="font-bold text-slate-800 mb-4">
-                    Combined Text
+                    Voice Combined Text
                   </h4>
                   <div className="space-y-4">
                     {existingMakeTextAnalysis?.combinedText ? (
-                      <div className="p-4 rounded-lg border border-blue-200 bg-blue-50">
+                      <div className="p-4 rounded-lg border border-purple-200 bg-purple-50">
                         <div className="mb-3 flex items-center justify-between">
-                          <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded font-medium">
-                            Combined Conversation Text
+                          <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded font-medium">
+                            Combined Voice Conversation Text
                           </span>
                           <span className="text-xs text-slate-500">
                             {existingMakeTextAnalysis.combinedText.length}{" "}
@@ -1108,7 +1095,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                                       role === "user"
                                         ? "bg-green-100 text-green-800"
                                         : role === "assistant"
-                                          ? "bg-blue-100 text-blue-800"
+                                          ? "bg-purple-100 text-purple-800"
                                           : role === "mentor"
                                             ? "bg-purple-100 text-purple-800"
                                             : "bg-gray-100 text-gray-800";
@@ -1117,7 +1104,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                                       role === "user"
                                         ? "border-l-green-400"
                                         : role === "assistant"
-                                          ? "border-l-blue-400"
+                                          ? "border-l-purple-400"
                                           : role === "mentor"
                                             ? "border-l-purple-400"
                                             : "border-l-gray-400";
@@ -1164,41 +1151,51 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center p-6">
-              <h3 className="text-xl font-semibold text-slate-800 mb-3">
-                {selectedChat?.title || "Ready to Analyze"}
-              </h3>
-              <p className="text-slate-500 max-w-sm leading-relaxed">
-                Start the analysis to calculate scores and get insights from
-                this conversation.
-              </p>
-              <div className="mt-6 w-full space-y-3">
-                <button
-                  onClick={handleStartAnalysisClick}
-                  className="w-full bg-slate-600 hover:bg-slate-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
-                >
-                  Start Multi-Model Analysis
-                </button>
-                <button
-                  onClick={() => {
-                    setShowModal(true);
-                    setSingleModelMode(true);
-                  }}
-                  className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
-                >
-                  Start Single Model Analysis
-                </button>
-                <button
-                  onClick={handleMakeTextClick}
-                  className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
-                >
-                  Make Text Analysis
-                </button>
+            // No results yet - show buttons to start analysis
+            <div className="flex flex-col h-full">
+              <div className="flex-1 relative overflow-hidden">
+                <div className="absolute inset-0">
+                  <div className="w-full h-full bg-gradient-to-br from-purple-100 via-white to-purple-50 blur-lg transform scale-110"></div>
+                </div>
+                <div className="relative z-20 flex flex-col items-center justify-center h-full text-center p-6">
+                  <h3 className="text-xl font-semibold text-slate-800 mb-3">
+                    {selectedVoiceChat?.title || "Ready to Analyze"}
+                  </h3>
+                  <p className="text-slate-500 max-w-sm leading-relaxed">
+                    Start the analysis to calculate scores and get insights from
+                    this voice conversation.
+                  </p>
+                </div>
+              </div>
+              <div className="border-t border-slate-200/60 p-6 flex-shrink-0 bg-white">
+                <div className="space-y-3">
+                  <button
+                    onClick={handleStartAnalysisClick}
+                    className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
+                  >
+                    Start Multi-Model Analysis
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowModal(true);
+                      setSingleModelMode(true);
+                    }}
+                    className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
+                  >
+                    Start Single Model Analysis
+                  </button>
+                  <button
+                    onClick={handleMakeTextClick}
+                    className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
+                  >
+                    Make Text Analysis
+                  </button>
+                </div>
               </div>
             </div>
           )}
         </div>
-      )}
+      ) : null}
 
       {/* Modal for prompt selection */}
       {showModal && (
@@ -1212,10 +1209,10 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
             </button>
             <h3 className="text-lg font-bold text-slate-800 mb-4">
               {singleModelMode
-                ? "Select Single Model Prompt"
+                ? "Select Single Model Prompt for Voice"
                 : makeTextMode
-                  ? "Select Prompts for Make Text Analysis"
-                  : "Select Prompts"}
+                  ? "Select Prompts for Voice Make Text Analysis"
+                  : "Select Prompts for Voice Analysis"}
             </h3>
 
             {singleModelMode ? (
@@ -1242,9 +1239,10 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
               <div className="mb-4">
                 <div className="mb-3 p-3 bg-green-50 border-l-4 border-green-400 rounded">
                   <p className="text-sm text-green-800">
-                    <strong>✅ Combined Text Created:</strong> The conversation
-                    has been successfully combined and saved to the database.
-                    Now select prompts for each model to start the analysis.
+                    <strong>✅ Combined Voice Text Created:</strong> The voice
+                    conversation has been successfully combined and saved to the
+                    database. Now select prompts for each model to start the
+                    analysis.
                   </p>
                 </div>
                 {modelNames.map((modelName, index) => {
@@ -1311,7 +1309,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                       ? handleMakeTextAnalysis
                       : handleStartAnalysis
                 }
-                className="bg-slate-600 text-white py-2 px-4 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="bg-purple-600 text-white py-2 px-4 rounded-lg disabled:bg-gray-400 disabled:cursor-not-allowed"
                 disabled={
                   singleModelMode
                     ? !selectedSinglePrompt
@@ -1322,10 +1320,10 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                 }
               >
                 {singleModelMode
-                  ? "Start Single Model Analysis"
+                  ? "Start Voice Single Model Analysis"
                   : makeTextMode
-                    ? "Start Make Text Analysis"
-                    : "Start Multi-Model Analysis"}
+                    ? "Start Voice Make Text Analysis"
+                    : "Start Voice Multi-Model Analysis"}
               </button>
             </div>
           </div>

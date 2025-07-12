@@ -52,6 +52,7 @@ export default defineSchema({
     singleModelName: v.optional(v.string()),
     singleModelTemperature: v.optional(v.number()),
     calculationApiKey: v.optional(v.string()),
+    calculationProvider: v.optional(v.string()), // "OpenRouter" or "OpenAI"
     createdAt: v.number(),
     updatedAt: v.number(),
   }),
@@ -83,7 +84,7 @@ export default defineSchema({
     updatedAt: v.number(),
   }).index("by_chat", ["chatId"]),
 
-  // Voice analysis tables (similar to text analysis)
+  // Voice chat analysis tables
   voiceChatAnalyses: defineTable({
     sessionId: v.string(),
     promptId: v.string(),
@@ -95,6 +96,7 @@ export default defineSchema({
     createdAt: v.number(),
     updatedAt: v.number(),
   }).index("by_session_and_model", ["sessionId", "modelName"]),
+
   voiceMakeTextAnalyses: defineTable({
     sessionId: v.string(),
     combinedText: v.string(),
