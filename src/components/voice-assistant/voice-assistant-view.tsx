@@ -37,6 +37,7 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
     endSession,
     startRecording,
     stopRecording,
+    clearError,
   } = useChainedVoiceAssistant();
 
   // Fetch current session messages from database
@@ -95,6 +96,11 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
 
   // Handle push-to-talk button press with stable functions
   const handlePushToTalkStart = useCallback(() => {
+    // Clear any existing errors first
+    if (error) {
+      clearError();
+    }
+
     // Prevent interaction during AI processing states
     if (isTranscribing || isThinking || isSpeaking) {
       return;
@@ -103,9 +109,15 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
     if (isSessionActive && !isButtonPressed) {
       setIsButtonPressed(true);
       setRecordingStartTime(Date.now());
-      startRecording().catch(console.error);
+      startRecording().catch((recordingError) => {
+        console.error("Failed to start recording:", recordingError);
+        setIsButtonPressed(false);
+        setRecordingStartTime(null);
+      });
     }
   }, [
+    error,
+    clearError,
     isSessionActive,
     isButtonPressed,
     isTranscribing,
@@ -163,6 +175,17 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
     if (onClose) onClose();
     if (onBack) onBack();
   };
+
+  // Auto-clear errors after 5 seconds and allow retry
+  useEffect(() => {
+    if (error) {
+      const errorTimer = setTimeout(() => {
+        clearError();
+      }, 5000);
+
+      return () => clearTimeout(errorTimer);
+    }
+  }, [error, clearError]);
 
   return (
     <div className="h-full bg-gradient-to-br  from-slate-900 via-blue-950 to-indigo-950 overflow-hidden relative">
@@ -248,7 +271,17 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
                   Error:
                 </p>
               </div>
-              <p className="text-white text-sm sm:text-base">{error}</p>
+              <p className="text-white text-sm sm:text-base mb-3">{error}</p>
+
+              {/* Retry Button */}
+              <motion.button
+                onClick={clearError}
+                className="w-full sm:w-auto px-4 py-2 bg-red-500/80 hover:bg-red-500 text-white text-sm rounded-lg transition-colors duration-200"
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Try Again
+              </motion.button>
             </motion.div>
           )}
         </AnimatePresence>
@@ -855,9 +888,11 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
           <p className="text-red-300/60 text-xs text-center px-4">
             {!isSessionActive
               ? "Connecting..."
-              : isTranscribing || isThinking || isSpeaking
-                ? "Please wait for to finish..."
-                : "Speak clearly for best results"}
+              : error
+                ? "Error occurred. Try recording again or check the retry button above."
+                : isTranscribing || isThinking || isSpeaking
+                  ? "Please wait for PANDA to finish..."
+                  : "Speak clearly for best results"}
           </p>
         </motion.div>
       </div>

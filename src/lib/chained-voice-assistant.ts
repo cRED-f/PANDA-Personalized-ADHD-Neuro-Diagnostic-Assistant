@@ -163,7 +163,7 @@ export class ChainedVoiceAssistant {
 
       const aiResponse = await this.generateResponse(transcript);
 
-      if (!aiResponse) {
+      if (!aiResponse || aiResponse.trim().length === 0) {
         this.updateStatus("idle");
         return;
       }
@@ -186,15 +186,41 @@ export class ChainedVoiceAssistant {
       this.updateStatus("idle");
     } catch (error) {
       console.error("Processing error:", error);
-      this.events.onError(
-        error instanceof Error ? error.message : "Processing failed"
-      );
+
+      // Clean up audio chunks to prevent accumulation
+      this.audioChunks = [];
+
+      // Provide more specific error messages
+      let errorMessage = "Processing failed";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      }
+
+      this.events.onError(errorMessage);
       this.updateStatus("error");
+
+      // Auto-recover from error state after a short delay
+      setTimeout(() => {
+        if (this.currentStatus === "error") {
+          this.updateStatus("idle");
+        }
+      }, 3000);
     }
   }
 
   private async transcribeAudio(audioBlob: Blob): Promise<string> {
     try {
+      // Check if audio blob is valid
+      if (!audioBlob || audioBlob.size === 0) {
+        throw new Error("No audio data recorded. Please try speaking again.");
+      }
+
+      if (audioBlob.size < 1000) {
+        throw new Error(
+          "Audio recording too short. Please hold the button longer and speak clearly."
+        );
+      }
+
       // Determine correct file extension and name based on actual MIME type
       let fileName = "recording.webm";
       const mimeType = audioBlob.type;
@@ -216,7 +242,13 @@ export class ChainedVoiceAssistant {
 
       const result = await this.openAIService.transcribeAudio(audioFile);
 
-      return result.text || "";
+      if (!result || !result.text) {
+        throw new Error(
+          "Speech not recognized. Please speak clearly and try again."
+        );
+      }
+
+      return result.text.trim();
     } catch (error) {
       console.error("Transcription failed:", error);
       throw new Error("Speech-to-text failed");
@@ -258,20 +290,37 @@ export class ChainedVoiceAssistant {
 
       const aiResponse = response.choices[0]?.message?.content || "";
 
-      return aiResponse;
+      if (!aiResponse || aiResponse.trim().length === 0) {
+        throw new Error("AI did not generate a response. Please try again.");
+      }
+
+      return aiResponse.trim();
     } catch (error) {
       console.error("LLM processing failed:", error);
-      throw new Error("AI response generation failed");
+      if (error instanceof Error) {
+        throw error; // Preserve specific error messages
+      }
+      throw new Error(
+        "AI response generation failed. Please check your connection and try again."
+      );
     }
   }
 
   private async synthesizeSpeech(text: string): Promise<string | null> {
     try {
+      if (!text || text.trim().length === 0) {
+        throw new Error("No text to synthesize");
+      }
+
       const audioBuffer = await this.openAIService.generateSpeech(
         text,
         this.config.voice || "alloy",
         "gpt-4o-mini-tts"
       );
+
+      if (!audioBuffer || audioBuffer.byteLength === 0) {
+        throw new Error("No audio data received from text-to-speech");
+      }
 
       // Create blob URL for playback
       const audioBlob = new Blob([audioBuffer], { type: "audio/wav" });
@@ -280,7 +329,12 @@ export class ChainedVoiceAssistant {
       return audioUrl;
     } catch (error) {
       console.error("Speech synthesis failed:", error);
-      throw new Error("Text-to-speech failed");
+      if (error instanceof Error) {
+        throw error; // Preserve specific error messages
+      }
+      throw new Error(
+        "Text-to-speech failed. Please check your connection and try again."
+      );
     }
   }
 
@@ -458,6 +512,14 @@ Use simple transitions between behaviors:
       this.updateStatus("idle");
     } catch (error) {
       console.error("Cleanup failed:", error);
+    }
+  }
+
+  // Method to reset from error state
+  resetFromError(): void {
+    if (this.currentStatus === "error") {
+      this.audioChunks = [];
+      this.updateStatus("idle");
     }
   }
 }

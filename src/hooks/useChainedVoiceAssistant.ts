@@ -30,6 +30,7 @@ export interface ChainedVoiceAssistantActions {
   endSession: () => Promise<void>;
   startRecording: () => Promise<void>;
   stopRecording: () => Promise<void>;
+  clearError: () => void;
 }
 
 export const useChainedVoiceAssistant = (): ChainedVoiceAssistantState &
@@ -294,6 +295,22 @@ export const useChainedVoiceAssistant = (): ChainedVoiceAssistantState &
     }
   }, []);
 
+  // Clear error and reset to idle state
+  const clearError = useCallback(() => {
+    // Reset the voice assistant from error state
+    if (voiceAssistantRef.current) {
+      voiceAssistantRef.current.resetFromError();
+    }
+
+    setState((prev) => ({
+      ...prev,
+      error: null,
+      status: "idle",
+      transcript: "",
+      response: "",
+    }));
+  }, []);
+
   // Cleanup on unmount
   useEffect(() => {
     return () => {
@@ -309,5 +326,6 @@ export const useChainedVoiceAssistant = (): ChainedVoiceAssistantState &
     endSession,
     startRecording,
     stopRecording,
+    clearError,
   };
 };
