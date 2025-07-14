@@ -23,17 +23,17 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
 
   const conversationMessages = [
     {
-      speaker: "Parent",
+      speaker: "User",
       text: "hi",
       isUser: true,
     },
     {
       speaker: "PANDA",
-      text: "Hello! I'm Dr. Assistant. How are you feeling today?",
+      text: "Hello! I'm Dr. PANDA. How are you feeling today?",
       isUser: false,
     },
     {
-      speaker: "Parent",
+      speaker: "User",
       text: "fine",
       isUser: true,
     },
@@ -43,7 +43,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
       isUser: false,
     },
     {
-      speaker: "Parent",
+      speaker: "User",
       text: "i want to talk about my son",
       isUser: true,
     },
@@ -53,7 +53,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
       isUser: false,
     },
     {
-      speaker: "Parent",
+      speaker: "User",
       text: "He's Fahim and 12 years old",
       isUser: true,
     },
@@ -63,7 +63,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
       isUser: false,
     },
     {
-      speaker: "Parent",
+      speaker: "User",
       text: "he is in 6th grade and he is having hard time focusing on study",
       isUser: true,
     },
@@ -73,7 +73,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
       isUser: false,
     },
     {
-      speaker: "Parent",
+      speaker: "User",
       text: "When Fahim is doing homework, the things that tend to distract him the most are noises in the environment",
       isUser: true,
     },
@@ -146,7 +146,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="h-full w-full bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 overflow-hidden relative">
+        <div className="h-full w-full bg-gradient-to-br  from-slate-900 via-blue-950 to-indigo-950 overflow-hidden relative">
           {/* Enhanced Animated Background Elements */}
           <motion.div
             className="absolute inset-0 overflow-hidden"
@@ -254,7 +254,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
 
           {/* Close Button */}
           <motion.button
-            className="absolute top-4 right-4 z-50 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border border-white/20"
+            className="absolute top-2 sm:top-4 right-2 sm:right-4 z-50 w-8 h-8 sm:w-10 sm:h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg backdrop-blur-sm border border-white/20"
             onClick={onClose}
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
@@ -262,14 +262,15 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
             animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
           >
-            <IconX size={18} className="text-white" />
+            <IconX size={16} className="text-white sm:hidden" />
+            <IconX size={18} className="text-white hidden sm:block" />
           </motion.button>
 
           {/* Main Content with tear-down animation */}
           <AnimatePresence mode="wait">
             {!isTransitioning && (
               <motion.div
-                className="relative z-10 h-full flex flex-col justify-between items-center p-6 overflow-y-auto"
+                className="relative z-10 h-full flex flex-col justify-between items-center p-3 sm:p-6 overflow-y-auto"
                 initial={{ opacity: 1, scale: 1 }}
                 exit={{
                   opacity: 0,
@@ -280,10 +281,10 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                 }}
               >
                 {/* Main content section - centered */}
-                <div className="flex-1 flex flex-col items-center justify-center  mx-auto w-full">
+                <div className="flex-1 flex flex-col items-center justify-center mx-auto w-full">
                   {/* Header */}
                   <motion.div
-                    className="text-center mb-4"
+                    className="text-center mb-2 sm:mb-4"
                     initial={{ opacity: 0, y: 50 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.2, duration: 0.8 }}
@@ -292,29 +293,29 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
 
                     {/* Voice activity indicator */}
                     <motion.div
-                      className="flex justify-center items-center gap-2 mb-4"
+                      className="flex justify-center items-center gap-1 sm:gap-2 mb-2 sm:mb-4"
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 1.5, duration: 0.5 }}
                     >
                       <motion.div
-                        className="w-2 h-2 bg-gradient-to-r from-lime-400 to-green-400 rounded-full"
+                        className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-gradient-to-r from-lime-400 to-green-400 rounded-full"
                         animate={{
                           scale: [1, 1.4, 1],
                           boxShadow: [
                             "0 0 0 0 rgba(132, 204, 22, 0.7)",
-                            "0 0 0 6px rgba(132, 204, 22, 0)",
+                            "0 0 0 4px rgba(132, 204, 22, 0)",
                             "0 0 0 0 rgba(132, 204, 22, 0.7)",
                           ],
                         }}
                         transition={{ duration: 2, repeat: Infinity }}
                       />
                       <motion.span
-                        className="text-lime-300 text-xs font-medium"
+                        className="text-lime-300 text-xs sm:text-sm font-medium"
                         initial={{ opacity: 1 }}
                         animate={{ opacity: 1 }}
                       >
-                        AI Voice Ready
+                        Voice Assistant Ready
                       </motion.span>
                     </motion.div>
 
@@ -322,9 +323,9 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       transition={{ delay: 0.6, duration: 0.6 }}
-                      className="text-3xl font-bold text-white mb-2"
+                      className="text-lg sm:text-2xl md:text-3xl font-bold text-white px-2"
                     >
-                      PANDA Voice Assistant
+                      PANDA: Personalized ADHD Neuro Diagnostic Assessment{" "}
                     </motion.h1>
 
                     {/* Fixed subtitle without shaking */}
@@ -332,13 +333,13 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: 1.2, duration: 0.6 }}
-                      className="h-16 flex mt-6 items-center justify-center mb-6"
+                      className="h-4 sm:h-12 flex mt-1 sm:mt-2 items-center justify-center mb-1"
                     >
-                      <p className="text-lg text-gray-300 max-w-3xl mx-auto text-center leading-relaxed">
-                        Live conversation analysis for Kids ADHD detection
-                        through evidence-based assessment patterns. This tool
-                        assists mental health professionals in screening ADHD
-                        symptoms through natural dialogue.
+                      <p className="text-sm sm:text-base md:text-lg text-gray-300 max-w-3xl mx-auto text-center leading-relaxed px-2">
+                        Real-time Conversation Analysis for ADHD Detection
+                        through Evidence-Based Screening helps identify
+                        ADHD-related symptoms during natural interactions,
+                        ensuring accurate assessments
                       </p>
                     </motion.div>
                   </motion.div>
@@ -348,7 +349,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.8, duration: 0.5 }}
-                    className="mb-8 grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl w-full"
+                    className="mb-2 sm:mb-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-6 max-w-4xl w-full px-2"
                   >
                     {[
                       {
@@ -359,16 +360,16 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                         delay: 0.9,
                       },
                       {
-                        icon: "🧠",
-                        title: "Child Development",
-                        desc: "Age-appropriate interaction patterns",
+                        icon: "👶",
+                        title: "Early Detection",
+                        desc: "Recognizing early signs of behavioral patterns",
                         color: "from-indigo-600/15 to-blue-700/15",
                         delay: 1.0,
                       },
                       {
-                        icon: "🎤",
-                        title: "Live Analysis",
-                        desc: "Real-time behavioral pattern detection",
+                        icon: "🗣️",
+                        title: "Natural Conversation",
+                        desc: "Analyzing real-time conversations for behavior insights",
                         color: "from-slate-700/15 to-blue-600/15",
                         delay: 1.1,
                       },
@@ -379,13 +380,15 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: feature.delay, duration: 0.6 }}
                         whileHover={{ scale: 1.02 }}
-                        className={`relative text-center p-6 bg-gradient-to-br ${feature.color} backdrop-blur-sm border border-white/30 rounded-xl overflow-hidden group cursor-pointer`}
+                        className={`relative text-center p-1 sm:p-2 bg-gradient-to-br ${feature.color} backdrop-blur-sm border border-white/30 rounded-xl overflow-hidden group cursor-pointer`}
                       >
-                        <div className="text-3xl mb-3">{feature.icon}</div>
-                        <h3 className="font-bold text-white mb-2 text-sm">
+                        <div className="text-2xl sm:text-3xl mb-2 sm:mb-2">
+                          {feature.icon}
+                        </div>
+                        <h3 className="font-bold text-white mb-1 sm:mb-2 text-xs sm:text-sm">
                           {feature.title}
                         </h3>
-                        <p className="text-sm text-gray-300 leading-relaxed">
+                        <p className="text-xs sm:text-sm text-gray-300 leading-relaxed">
                           {feature.desc}
                         </p>
                       </motion.div>
@@ -397,25 +400,25 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                     initial={{ opacity: 0, y: 30 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.5, duration: 0.6 }}
-                    className="mb-8 max-w-4xl mx-auto w-full"
+                    className="mb-2 sm:mb-2 max-w-4xl mx-auto w-full px-2"
                   >
-                    <div className="bg-white/5 backdrop-blur-xl rounded-xl p-6 border border-white/20 relative overflow-hidden">
+                    <div className="bg-white/5 backdrop-blur-xl rounded-xl p-3 sm:p-4 border border-white/20 relative overflow-hidden">
                       <div className="relative z-10">
                         <motion.h3
-                          className="text-xl font-bold text-white mb-6 text-center"
+                          className="text-lg sm:text-xl font-bold text-white mb-3 sm:mb-6 text-center"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: 0.7, duration: 0.6 }}
                         >
-                          ADHD Assessment in Action
+                          PANDA Assessment in Action
                         </motion.h3>
 
                         {/* Voice Conversation Preview */}
                         <div
                           ref={conversationRef}
-                          className="h-48 overflow-y-auto scrollbar-hide"
+                          className="h-32 sm:h-40 md:h-48 overflow-y-auto scrollbar-hide"
                         >
-                          <div className="space-y-4 pr-2 min-h-full">
+                          <div className="space-y-2 sm:space-y-4 pr-1 sm:pr-2 min-h-full">
                             <AnimatePresence>
                               {conversationMessages
                                 .slice(0, visibleMessages)
@@ -438,11 +441,11 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                                       type: "spring",
                                       bounce: 0.2,
                                     }}
-                                    className="flex items-start gap-3"
+                                    className="flex items-start gap-2 sm:gap-3"
                                   >
                                     {/* Speaker avatar - always visible for voice chat */}
                                     <motion.div
-                                      className={`flex-shrink-0 w-10 h-10 rounded-full flex items-center justify-center text-lg shadow-lg relative ${
+                                      className={`flex-shrink-0 w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center text-sm sm:text-lg shadow-lg relative ${
                                         message.isUser
                                           ? "bg-gradient-to-br from-green-500 to-emerald-500"
                                           : "bg-gradient-to-br from-blue-500 to-indigo-500"
@@ -455,12 +458,12 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                                         bounce: 0.4,
                                       }}
                                     >
-                                      {message.isUser ? "🗣️" : "🧠"}
+                                      {message.isUser ? "👱🏻‍♂️" : "🐼"}
 
                                       {/* Voice indicator for current speaker */}
                                       {index === visibleMessages - 1 && (
                                         <motion.div
-                                          className="absolute -bottom-1 -right-1 w-4 h-4 bg-lime-500 rounded-full border-2 border-white"
+                                          className="absolute -bottom-0.5 -right-0.5 sm:-bottom-1 sm:-right-1 w-3 h-3 sm:w-4 sm:h-4 bg-lime-500 rounded-full border-2 border-white"
                                           animate={{
                                             scale: [1, 1.2, 1],
                                             opacity: [0.7, 1, 0.7],
@@ -496,14 +499,14 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                                       ></div>
 
                                       <div
-                                        className={`px-4 py-3 rounded-2xl rounded-tl-sm text-sm relative ${
+                                        className={`px-3 sm:px-4 py-2 sm:py-3 rounded-2xl rounded-tl-sm text-xs sm:text-sm relative ${
                                           message.isUser
                                             ? "bg-gradient-to-br from-green-600/20 to-emerald-600/20 text-green-100 border border-green-500/30"
                                             : "bg-gradient-to-br from-blue-600/20 to-indigo-600/20 text-blue-100 border border-blue-500/30"
                                         } shadow-lg backdrop-blur-sm`}
                                       >
                                         {/* Speaker label with voice icon */}
-                                        <div className="flex items-center gap-2 mb-2">
+                                        <div className="flex items-center gap-1 sm:gap-2 mb-1 sm:mb-2">
                                           <span className="text-xs font-semibold opacity-90">
                                             {message.speaker}
                                           </span>
@@ -545,7 +548,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                                         </div>
 
                                         {/* Message text with quotes for voice feel */}
-                                        <div className="text-sm leading-relaxed">
+                                        <div className="text-xs sm:text-sm leading-relaxed">
                                           <motion.span
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
@@ -567,7 +570,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
 
                         {/* Session indicators */}
                         <motion.div
-                          className="mt-3 flex justify-center items-center gap-3 text-gray-400"
+                          className="mt-2 sm:mt-3 flex justify-center items-center gap-2 sm:gap-3 text-gray-400"
                           initial={{ opacity: 0 }}
                           animate={{ opacity: 1 }}
                           transition={{ delay: 3, duration: 0.5 }}
@@ -590,7 +593,10 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                             }}
                           >
                             <div className="w-1 h-1 bg-emerald-500 rounded-full"></div>
-                            <span className="text-xs">Pattern Recognition</span>
+                            <span className="text-xs hidden sm:inline">
+                              Pattern Recognition
+                            </span>
+                            <span className="text-xs sm:hidden">Patterns</span>
                           </motion.div>
                           <motion.div
                             className="flex items-center gap-1"
@@ -615,11 +621,11 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                   initial={{ opacity: 0, y: 30 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: 1.5, duration: 0.6 }}
-                  className="text-center relative mt-auto"
+                  className="text-center relative mt-auto px-2"
                 >
                   <motion.button
                     onClick={handleStart}
-                    className="relative px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-full shadow-2xl transition-all duration-300 text-sm overflow-hidden group"
+                    className="relative px-6 sm:px-8 py-2.5 sm:py-3 bg-gradient-to-r from-sky-600 to-indigo-600 text-white font-bold rounded-full shadow-2xl transition-all duration-300 text-xs sm:text-sm overflow-hidden group"
                     whileHover={{
                       scale: 1.05,
                       y: -2,
@@ -637,7 +643,7 @@ export const VoiceAssistantModal: FC<VoiceAssistantModalProps> = ({
                     }
                   >
                     <span className="relative z-10 flex items-center gap-2">
-                      🎤 Begin ADHD Assessment Session
+                      Begin PANDA Assessment Session
                     </span>
                   </motion.button>
                 </motion.div>

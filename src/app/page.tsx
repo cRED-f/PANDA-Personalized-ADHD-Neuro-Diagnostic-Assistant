@@ -262,9 +262,9 @@ function HomeContent() {
           (currentContentType === "calculate-score" ||
             currentContentType === "calculation-settings" ||
             currentContentType === "voice-calculate-score")
-            ? "ml-[400px]"
+            ? "ml-[304px]"
             : sidebarVisible && currentContentType !== "voice-assistant"
-              ? "ml-80"
+              ? "ml-72"
               : ""
         }`}
         initial={{ opacity: 0, y: 20 }}

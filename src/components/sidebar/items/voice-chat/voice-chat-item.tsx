@@ -7,7 +7,6 @@ import {
   IconMicrophone,
   IconTrash,
   IconPlayerPlay,
-  IconClock,
   IconMessageCircle,
   IconDots,
 } from "@tabler/icons-react";
@@ -71,17 +70,6 @@ export const VoiceChatItem: FC<VoiceChatItemProps> = ({
     }
   };
 
-  const formatDuration = (startTime: number, endTime?: number) => {
-    const duration = (endTime || Date.now()) - startTime;
-    const minutes = Math.floor(duration / (1000 * 60));
-    const seconds = Math.floor((duration % (1000 * 60)) / 1000);
-
-    if (minutes > 0) {
-      return `${minutes}m ${seconds}s`;
-    }
-    return `${seconds}s`;
-  };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case "active":
@@ -95,26 +83,11 @@ export const VoiceChatItem: FC<VoiceChatItemProps> = ({
     }
   };
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case "active":
-        return "Active";
-      case "paused":
-        return "Paused";
-      case "completed":
-        return "Completed";
-      default:
-        return "Unknown";
-    }
-  };
-
   return (
     <motion.div
-      className={`group relative p-4 rounded-2xl cursor-pointer border transition-all duration-300 overflow-hidden ${
-        isSelected
-          ? "border-blue-400/60 shadow-2xl shadow-blue-500/30"
-          : "border-white/30 hover:border-white/50 hover:shadow-xl hover:shadow-white/20"
-      }`}
+      className={`group relative p-2  rounded-2xl cursor-pointer  transition-all duration-300 overflow-hidden  shadow-xl shadow-gray-300/50
+ 
+      `}
       style={{
         backdropFilter: "blur(24px) saturate(180%)",
         WebkitBackdropFilter: "blur(24px) saturate(180%)",
@@ -140,9 +113,9 @@ export const VoiceChatItem: FC<VoiceChatItemProps> = ({
       />
 
       {/* Content container with relative positioning */}
-      <div className="relative z-10">
+      <div className="relative z-10 ">
         {/* Header */}
-        <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center justify-between  ">
           <div className="flex items-center gap-2">
             <motion.div
               className={`w-2 h-2 rounded-full ${getStatusColor(voiceChat.status)}`}
@@ -155,9 +128,6 @@ export const VoiceChatItem: FC<VoiceChatItemProps> = ({
                 repeat: voiceChat.status === "active" ? Infinity : 0,
               }}
             />
-            <span className="text-xs font-medium text-gray-800 drop-shadow-sm">
-              {getStatusText(voiceChat.status)}
-            </span>
           </div>
 
           <div className="flex items-center gap-1">
@@ -193,12 +163,6 @@ export const VoiceChatItem: FC<VoiceChatItemProps> = ({
               <IconMessageCircle size={12} className="drop-shadow-sm" />
               <span className="drop-shadow-sm">{voiceChat.totalMessages}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <IconClock size={12} className="drop-shadow-sm" />
-              <span className="drop-shadow-sm">
-                {formatDuration(voiceChat.startTime, voiceChat.endTime)}
-              </span>
-            </div>
           </div>
           <span className="drop-shadow-sm">
             {formatDate(voiceChat.createdAt)}
@@ -207,7 +171,7 @@ export const VoiceChatItem: FC<VoiceChatItemProps> = ({
 
         {/* Quick Actions */}
         <motion.div
-          className="flex items-center gap-1 mt-3 opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+          className="flex items-center gap-1 mt-3 opacity-100 transition-opacity duration-200"
           initial={false}
         >
           <motion.button

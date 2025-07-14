@@ -31,44 +31,45 @@ export const SidebarSwitcher: FC<SidebarSwitcherProps> = ({
       <div className="w-16 bg-white/20 backdrop-blur-xl rounded-2xl p-3 border border-white/30 shadow-2xl">
         <TabsList className="flex h-full w-full flex-col items-center justify-center gap-4 bg-transparent p-0">
           <SidebarSwitchItem
-            icon={<IconMessage size={20} />}
-            contentType="chats"
-            onContentTypeChange={onContentTypeChange}
-            tooltip="Chats"
-            color="from-blue-500 to-cyan-600"
-            hoverColor="hover:from-blue-600 hover:to-cyan-700"
-          />
-          <SidebarSwitchItem
             icon={<IconMicrophone size={20} />}
             contentType="voice-chats"
             onContentTypeChange={onContentTypeChange}
             tooltip="Voice Chats"
-            color="from-purple-500 to-pink-600"
-            hoverColor="hover:from-purple-600 hover:to-pink-700"
+            color="from-blue-700 to-cyan-600"
+            hoverColor="hover:from-blue-600 hover:to-cyan-700"
           />
           <SidebarSwitchItem
+            icon={<IconMessage size={20} />}
+            contentType="chats"
+            onContentTypeChange={onContentTypeChange}
+            tooltip="Chats"
+            color="from-green-800 to-teal-600"
+            hoverColor="hover:from-green-700 hover:to-teal-700"
+          />
+
+          {/* <SidebarSwitchItem
             icon={<IconSparkles size={20} />}
             contentType="presets"
             onContentTypeChange={onContentTypeChange}
             tooltip="Presets"
             color="from-pink-500 to-rose-600"
             hoverColor="hover:from-pink-600 hover:to-rose-700"
-          />
-          <SidebarSwitchItem
+          /> */}
+          {/* <SidebarSwitchItem
             icon={<IconPencil size={20} />}
             contentType="prompts"
             onContentTypeChange={onContentTypeChange}
             tooltip="Prompts"
             color="from-green-500 to-emerald-600"
             hoverColor="hover:from-green-600 hover:to-emerald-700"
-          />
+          /> */}
           <SidebarSwitchItem
             icon={<IconCalculator size={20} />}
             contentType="calculate-score"
             onContentTypeChange={onContentTypeChange}
             tooltip="Calculate Score"
-            color="from-orange-500 to-amber-600"
-            hoverColor="hover:from-orange-600 hover:to-amber-700"
+            color="from-red-800 to-pink-600"
+            hoverColor="hover:from-red-600 hover:to-pink-700"
           />
           <SidebarSwitchItem
             icon={
@@ -82,21 +83,21 @@ export const SidebarSwitcher: FC<SidebarSwitcherProps> = ({
             color="from-purple-500 to-violet-600"
             hoverColor="hover:from-purple-600 hover:to-violet-700"
           />
-          <SidebarSwitchItem
+          {/* <SidebarSwitchItem
             icon={<IconAdjustments size={20} />}
             contentType="calculation-settings"
             onContentTypeChange={onContentTypeChange}
             tooltip="Calculation Settings"
             color="from-teal-500 to-cyan-600"
             hoverColor="hover:from-teal-600 hover:to-cyan-700"
-          />
+          /> */}
           <SidebarSwitchItem
             icon={<IconDownload size={20} />}
             contentType="import-export"
             onContentTypeChange={onContentTypeChange}
             tooltip="Import/Export"
-            color="from-indigo-500 to-purple-600"
-            hoverColor="hover:from-indigo-600 hover:to-purple-700"
+            color="from-yellow-500 to-orange-600"
+            hoverColor="hover:from-yellow-600 hover:to-orange-700"
           />
           <SidebarSwitchItem
             icon={<IconSettings size={20} />}

@@ -885,7 +885,7 @@ export const VoiceCalculationInterface: FC<VoiceCalculationInterfaceProps> = ({
     <div className="h-full flex flex-col">
       <div className="flex items-center justify-between border-b border-slate-200/60 p-6 flex-shrink-0 bg-white">
         <div className="flex items-center space-x-3">
-          <div className="w-10 h-10 bg-purple-600 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-slate-600 rounded-lg flex items-center justify-center">
             <IconMicrophone size={20} className="text-white" />
           </div>
           <div>
@@ -940,7 +940,7 @@ export const VoiceCalculationInterface: FC<VoiceCalculationInterfaceProps> = ({
               </p>
               {/* Show buttons even after error */}
               <div className="w-full max-w-md space-y-3">
-                <button
+                {/* <button
                   onClick={handleStartAnalysisClick}
                   className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
                 >
@@ -954,7 +954,7 @@ export const VoiceCalculationInterface: FC<VoiceCalculationInterfaceProps> = ({
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
                 >
                   Start Single Model Analysis
-                </button>
+                </button> */}
                 <button
                   onClick={handleMakeTextClick}
                   className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
@@ -1169,7 +1169,7 @@ export const VoiceCalculationInterface: FC<VoiceCalculationInterfaceProps> = ({
               </div>
               <div className="border-t border-slate-200/60 p-6 flex-shrink-0 bg-white">
                 <div className="space-y-3">
-                  <button
+                  {/* <button
                     onClick={handleStartAnalysisClick}
                     className="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
                   >
@@ -1183,7 +1183,7 @@ export const VoiceCalculationInterface: FC<VoiceCalculationInterfaceProps> = ({
                     className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
                   >
                     Start Single Model Analysis
-                  </button>
+                  </button> */}
                   <button
                     onClick={handleMakeTextClick}
                     className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"

@@ -928,7 +928,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
           </div>
           <div className="border-t border-slate-200/60 p-6 flex-shrink-0 bg-white">
             <div className="space-y-3">
-              <button
+              {/* <button
                 onClick={handleStartAnalysisClick}
                 className="w-full bg-slate-600 hover:bg-slate-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
               >
@@ -942,7 +942,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                 className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
               >
                 Start Single Model Analysis
-              </button>
+              </button> */}
               <button
                 onClick={handleMakeTextClick}
                 className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
@@ -1164,7 +1164,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
               </div>
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center h-full text-center p-6">
+            <div className="relative z-20 flex flex-col items-center justify-center h-full text-center p-6">
               <h3 className="text-xl font-semibold text-slate-800 mb-3">
                 {selectedChat?.title || "Ready to Analyze"}
               </h3>
@@ -1173,7 +1173,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                 this conversation.
               </p>
               <div className="mt-6 w-full space-y-3">
-                <button
+                {/* <button
                   onClick={handleStartAnalysisClick}
                   className="w-full bg-slate-600 hover:bg-slate-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
                 >
@@ -1187,7 +1187,7 @@ export const CalculationInterface: FC<CalculationInterfaceProps> = ({
                   className="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"
                 >
                   Start Single Model Analysis
-                </button>
+                </button> */}
                 <button
                   onClick={handleMakeTextClick}
                   className="w-full bg-green-600 hover:bg-green-700 text-white py-3 px-6 rounded-lg font-medium transition-colors duration-200"

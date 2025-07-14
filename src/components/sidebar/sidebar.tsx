@@ -65,7 +65,7 @@ export const Sidebar: FC<SidebarProps> = ({
         <AnimatePresence mode="wait">
           {showSidebar && currentContentType !== "voice-assistant" && (
             <motion.div
-              className="fixed left-24 top-1/2 transform -translate-y-1/2  w-64 h-[80vh] z-30"
+              className="fixed left-24 top-1/2 transform -translate-y-1/2  w-48 h-[80vh] z-30"
               initial={{ x: -50, opacity: 0, scale: 0.95 }}
               animate={{ x: 0, opacity: 1, scale: 1 }}
               exit={{ x: -50, opacity: 0, scale: 0.95 }}
@@ -153,7 +153,7 @@ export const Sidebar: FC<SidebarProps> = ({
               currentContentType === "calculation-settings" ||
               currentContentType === "voice-calculate-score") && (
               <motion.div
-                className="fixed left-24 top-1/2 transform -translate-y-1/2 w-80 h-[85vh] z-30"
+                className="fixed left-24 top-1/2 transform -translate-y-1/2 w-52 h-[85vh] z-30"
                 initial={{ x: -50, opacity: 0, scale: 0.95 }}
                 animate={{ x: 0, opacity: 1, scale: 1 }}
                 exit={{ x: -50, opacity: 0, scale: 0.95 }}

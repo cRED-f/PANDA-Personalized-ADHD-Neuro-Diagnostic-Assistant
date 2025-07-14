@@ -69,7 +69,7 @@ const VoiceCalculateScore: FC<VoiceCalculateScoreProps> = ({
         {voiceChats.length === 0 ? (
           <div className="flex flex-col items-center justify-center h-full text-center p-6">
             <div className="w-20 h-20 bg-purple-100 rounded-2xl flex items-center justify-center mb-6">
-              <IconMicrophone size={40} className="text-purple-500" />
+              <IconMicrophone size={40} className="bg-slate-600" />
             </div>
             <h3 className="text-xl font-semibold text-slate-800 mb-3">
               No Voice Conversations Found
@@ -93,7 +93,7 @@ const VoiceCalculateScore: FC<VoiceCalculateScoreProps> = ({
               )}
               <button
                 onClick={handleCreateTestVoiceChat}
-                className="mt-3 px-4 py-2 bg-purple-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
+                className="mt-3 px-4 py-2 bg-slate-600 text-white text-sm rounded-lg hover:bg-purple-700 transition-colors"
               >
                 Create Test Voice Chat
               </button>
@@ -122,7 +122,7 @@ const VoiceCalculateScore: FC<VoiceCalculateScoreProps> = ({
                       <div className="flex items-center justify-between">
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center space-x-2 mb-1">
-                            <div className="w-6 h-6 bg-purple-500 rounded flex items-center justify-center flex-shrink-0">
+                            <div className="w-6 h-6 bg-purple-800/90 rounded flex items-center justify-center flex-shrink-0">
                               <IconMicrophone
                                 size={12}
                                 className="text-white"
@@ -151,7 +151,7 @@ const VoiceCalculateScore: FC<VoiceCalculateScoreProps> = ({
                               voiceChat.title
                             )
                           }
-                          className="ml-3 w-8 h-8 bg-purple-600 hover:bg-purple-700 text-white rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200"
+                          className="ml-3 w-8 h-8 bg-slate-600 hover:bg-purple-700 text-white rounded-full flex items-center justify-center shadow-sm hover:shadow-md transition-all duration-200"
                         >
                           <IconArrowRight size={14} />
                         </button>

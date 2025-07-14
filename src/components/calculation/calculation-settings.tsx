@@ -91,17 +91,17 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
   };
 
   return (
-    <div className="flex h-full flex-col bg-white/90 backdrop-blur-xl p-4">
-      <h2 className="text-lg font-semibold text-gray-900 mb-6">
+    <div className="flex h-full flex-col bg-white/90 backdrop-blur-xl p-2">
+      <h2 className="text-sm font-semibold text-gray-900 mb-3">
         Calculation Settings
       </h2>
 
-      <div className="space-y-4">
-        <h3 className="text-md font-medium text-gray-800 border-b pb-2 mb-4">
+      <div className="space-y-2">
+        <h3 className="text-xs font-medium text-gray-800 border-b pb-1 mb-2">
           Multi-Model Settings
         </h3>
-        <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
-          <p className="text-sm text-blue-800">
+        <div className="mb-2 p-2 bg-blue-50 border-l-2 border-blue-400 rounded">
+          <p className="text-xs text-blue-800">
             <strong>Provider: {calculationProvider}</strong>
             {calculationProvider === "OpenAI" ? (
               <span>
@@ -118,9 +118,9 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
           </p>
         </div>
         {modelNames.map((modelName, index) => (
-          <div key={index}>
-            <Label htmlFor={`model-name-${index}`}>
-              Model Name {index + 1}
+          <div key={index} className="space-y-1">
+            <Label htmlFor={`model-name-${index}`} className="text-xs">
+              Model {index + 1}
             </Label>
             <Input
               id={`model-name-${index}`}
@@ -131,10 +131,10 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
                 setModelNames(newModelNames);
               }}
               disabled={!isEditing}
-              className="mt-1"
+              className="h-7 text-xs"
             />
-            <Label htmlFor={`temperature-${index}`} className="mt-2">
-              Temperature {index + 1}
+            <Label htmlFor={`temperature-${index}`} className="text-xs">
+              Temp {index + 1}
             </Label>
             <Input
               id={`temperature-${index}`}
@@ -149,32 +149,34 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
                 setTemperatures(newTemperatures);
               }}
               disabled={!isEditing}
-              className="mt-1"
+              className="h-7 text-xs"
             />
           </div>
         ))}
 
-        <h3 className="text-md font-medium text-gray-800 border-b pb-2 mb-4 mt-8">
+        <h3 className="text-xs font-medium text-gray-800 border-b pb-1 mb-2 mt-4">
           Single Model Settings
         </h3>
-        <div>
-          <Label htmlFor="single-model-name">Single Model Name</Label>
+        <div className="space-y-1">
+          <Label htmlFor="single-model-name" className="text-xs">
+            Single Model
+          </Label>
           <Input
             id="single-model-name"
             value={singleModelName}
             onChange={(e) => setSingleModelName(e.target.value)}
             disabled={!isEditing}
-            className="mt-1"
+            className="h-7 text-xs"
             placeholder={
               calculationProvider === "OpenAI"
-                ? "e.g., gpt-4o, gpt-4, gpt-3.5-turbo"
-                : "e.g., gpt-4o-mini, anthropic/claude-3.5-sonnet, meta-llama/llama-3.1-8b-instruct"
+                ? "e.g., gpt-4o"
+                : "e.g., gpt-4o-mini"
             }
           />
         </div>
-        <div>
-          <Label htmlFor="single-model-temperature">
-            Single Model Temperature
+        <div className="space-y-1">
+          <Label htmlFor="single-model-temperature" className="text-xs">
+            Single Temp
           </Label>
           <Input
             id="single-model-temperature"
@@ -187,62 +189,64 @@ const CalculationSettings: FC<CalculationSettingsProps> = () => {
               setSingleModelTemperature(parseFloat(e.target.value))
             }
             disabled={!isEditing}
-            className="mt-1"
+            className="h-7 text-xs"
           />
         </div>
 
-        <h3 className="text-md font-medium text-gray-800 border-b pb-2 mb-4 mt-8">
+        <h3 className="text-xs font-medium text-gray-800 border-b pb-1 mb-2 mt-4">
           API Configuration
         </h3>
-        <div>
-          <Label htmlFor="calculation-provider">AI Provider</Label>
+        <div className="space-y-1">
+          <Label htmlFor="calculation-provider" className="text-xs">
+            Provider
+          </Label>
           <select
             id="calculation-provider"
             value={calculationProvider}
             onChange={(e) => setCalculationProvider(e.target.value)}
             disabled={!isEditing}
-            className="w-full mt-1 px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            className="w-full h-7 px-2 py-1 text-xs border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
           >
             <option value="OpenRouter">OpenRouter</option>
             <option value="OpenAI">OpenAI</option>
           </select>
-          <p className="text-xs text-gray-500 mt-1">
-            Choose the AI provider for calculations. Different providers may
-            have different available models.
+          <p className="text-xs text-gray-500">
+            Choose the AI provider for calculations.
           </p>
         </div>
-        <div>
-          <Label htmlFor="calculation-api-key">Calculation API Key</Label>
+        <div className="space-y-1">
+          <Label htmlFor="calculation-api-key" className="text-xs">
+            API Key
+          </Label>
           <Input
             id="calculation-api-key"
             type="password"
             value={calculationApiKey}
             onChange={(e) => setCalculationApiKey(e.target.value)}
             disabled={!isEditing}
-            className="mt-1"
-            placeholder={`Enter ${calculationProvider} API key for calculations (optional)`}
+            className="h-7 text-xs"
+            placeholder={`Enter ${calculationProvider} API key`}
           />
-          <p className="text-xs text-gray-500 mt-1">
-            Use a different API key specifically for calculations. Leave empty
-            to use the main API key.
+          <p className="text-xs text-gray-500">
+            Use different API key for calculations. Leave empty to use main key.
           </p>
         </div>
 
-        <div className="pt-4">
+        <div className="pt-2">
           {!isEditing ? (
             <Button
               onClick={handleEdit}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2.5 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white text-xs py-1.5 rounded-lg transition-colors duration-200"
             >
-              <IconEdit size={16} className="mr-2" />
+              <IconEdit size={12} className="mr-1" />
               Edit Settings
             </Button>
           ) : (
             <Button
               onClick={handleSave}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-medium py-2.5 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
+              className="w-full bg-green-600 hover:bg-green-700 text-white text-xs py-1.5 rounded-lg transition-colors duration-200"
             >
-              <IconCheck size={16} className="mr-2" />
+              <IconCheck size={12} className="mr-1" />
               Save Changes
             </Button>
           )}

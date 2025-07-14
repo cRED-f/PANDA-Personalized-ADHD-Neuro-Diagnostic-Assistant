@@ -20,6 +20,9 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
 }) => {
   const [userClosed, setUserClosed] = useState(false);
   const [isButtonPressed, setIsButtonPressed] = useState(false);
+  const [recordingStartTime, setRecordingStartTime] = useState<number | null>(
+    null
+  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const {
     isSessionActive,
@@ -92,29 +95,65 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
 
   // Handle push-to-talk button press with stable functions
   const handlePushToTalkStart = useCallback(() => {
+    // Prevent interaction during AI processing states
+    if (isTranscribing || isThinking || isSpeaking) {
+      return;
+    }
+
     if (isSessionActive && !isButtonPressed) {
       setIsButtonPressed(true);
+      setRecordingStartTime(Date.now());
       startRecording().catch(console.error);
     }
-  }, [isSessionActive, isButtonPressed, startRecording]);
+  }, [
+    isSessionActive,
+    isButtonPressed,
+    isTranscribing,
+    isThinking,
+    isSpeaking,
+    startRecording,
+  ]);
 
   const handlePushToTalkEnd = useCallback(() => {
-    // Always stop when button is released, regardless of other conditions
+    // Check minimum recording duration to prevent mistouches (500ms minimum)
+    const minimumRecordingDuration = 500;
+    const currentTime = Date.now();
+
+    if (
+      recordingStartTime &&
+      currentTime - recordingStartTime < minimumRecordingDuration
+    ) {
+      // Too short, ignore this release - keep recording
+      return;
+    }
+
+    // Always stop when button is released after minimum duration
     if (isButtonPressed) {
       setIsButtonPressed(false);
+      setRecordingStartTime(null);
     }
     // Always try to stop recording if it's active
     if (isRecording) {
       stopRecording().catch(console.error);
     }
-  }, [isRecording, isButtonPressed, stopRecording]);
+  }, [isRecording, isButtonPressed, recordingStartTime, stopRecording]);
 
   // Safety cleanup for stuck recording state
   useEffect(() => {
     if (!isButtonPressed && isRecording) {
       stopRecording().catch(console.error);
+      setRecordingStartTime(null);
     }
   }, [isButtonPressed, isRecording, stopRecording]);
+
+  // Prevent recording during AI processing
+  useEffect(() => {
+    if ((isTranscribing || isThinking || isSpeaking) && isRecording) {
+      stopRecording().catch(console.error);
+      setIsButtonPressed(false);
+      setRecordingStartTime(null);
+    }
+  }, [isTranscribing, isThinking, isSpeaking, isRecording, stopRecording]);
 
   const handleClose = () => {
     setUserClosed(true);
@@ -126,7 +165,7 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
   };
 
   return (
-    <div className="h-full bg-gradient-to-br from-slate-900 via-blue-950 to-indigo-950 overflow-hidden relative">
+    <div className="h-full bg-gradient-to-br  from-slate-900 via-blue-950 to-indigo-950 overflow-hidden relative">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden">
         <motion.div
@@ -158,11 +197,11 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
       </div>
 
       {/* Header */}
-      <div className="relative z-10 flex items-center justify-between p-6">
+      <div className="relative z-10 flex items-center justify-between p-3 sm:p-6">
         {/* Back Button */}
         <motion.button
           onClick={handleClose}
-          className="flex items-center gap-2 text-blue-200 hover:text-white transition-colors duration-200 bg-white/10 backdrop-blur-sm rounded-lg px-3 py-2 border border-white/20"
+          className="flex items-center gap-1 sm:gap-2 text-blue-200 hover:text-white transition-colors duration-200 bg-white/10 backdrop-blur-sm rounded-lg px-2 sm:px-3 py-1.5 sm:py-2 border border-white/20"
           whileHover={{ scale: 1.05, x: -2 }}
           whileTap={{ scale: 0.95 }}
         ></motion.button>
@@ -174,7 +213,7 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2, duration: 0.6 }}
         >
-          <h1 className="text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">
+          <h1 className="text-lg sm:text-xl md:text-2xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200 text-center px-2">
             PANDA - Voice Session
           </h1>
         </motion.div>
@@ -182,31 +221,34 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
         {/* Close Button */}
         <motion.button
           onClick={handleClose}
-          className="text-blue-200 hover:text-white transition-colors duration-200 bg-white/10 backdrop-blur-sm rounded-lg p-2 border border-white/20"
+          className="text-blue-200 hover:text-white transition-colors duration-200 bg-white/10 backdrop-blur-sm rounded-lg p-1.5 sm:p-2 border border-white/20"
           whileHover={{ scale: 1.1, rotate: 90 }}
           whileTap={{ scale: 0.9 }}
         >
-          <IconX size={20} />
+          <IconX size={16} className="sm:hidden" />
+          <IconX size={20} className="hidden sm:block" />
         </motion.button>
       </div>
 
       {/* Main Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-120px)] px-6">
+      <div className="relative z-10 flex flex-col items-center justify-center min-h-[calc(100vh-120px)] px-3 sm:px-6">
         {/* Error Display */}
         <AnimatePresence>
           {error && (
             <motion.div
-              className="mb-6 p-4 bg-red-500/20 border border-red-500/50 rounded-2xl backdrop-blur-xl max-w-2xl w-full"
+              className="mb-3 sm:mb-6 p-3 sm:p-4 bg-red-500/20 border border-red-500/50 rounded-2xl backdrop-blur-xl max-w-2xl w-full"
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
               transition={{ duration: 0.4 }}
             >
-              <div className="flex items-center gap-2 mb-2">
-                <div className="w-2 h-2 bg-red-400 rounded-full"></div>
-                <p className="text-red-200 text-sm font-medium">Error:</p>
+              <div className="flex items-center gap-2 mb-1 sm:mb-2">
+                <div className="w-1.5 h-1.5 sm:w-2 sm:h-2 bg-red-400 rounded-full"></div>
+                <p className="text-red-200 text-xs sm:text-sm font-medium">
+                  Error:
+                </p>
               </div>
-              <p className="text-white text-base">{error}</p>
+              <p className="text-white text-sm sm:text-base">{error}</p>
             </motion.div>
           )}
         </AnimatePresence>
@@ -215,19 +257,19 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
         <AnimatePresence>
           {isLoadingSettings && (
             <motion.div
-              className="mb-6 p-6 bg-gradient-to-r from-blue-600/15 to-indigo-600/15 rounded-2xl border border-blue-300/30 backdrop-blur-xl max-w-2xl w-full"
+              className="mb-3 sm:mb-6 p-4 sm:p-6 bg-gradient-to-r from-blue-600/15 to-indigo-600/15 rounded-2xl border border-blue-300/30 backdrop-blur-xl max-w-2xl w-full"
               initial={{ opacity: 0, y: 20, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
               transition={{ duration: 0.4 }}
             >
-              <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2 sm:gap-3">
                 <motion.div
-                  className="w-6 h-6 border-2 border-blue-400/30 border-t-blue-400 rounded-full"
+                  className="w-4 h-4 sm:w-6 sm:h-6 border-2 border-blue-400/30 border-t-blue-400 rounded-full"
                   animate={{ rotate: 360 }}
                   transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
                 />
-                <p className="text-blue-200 text-lg">
+                <p className="text-blue-200 text-sm sm:text-lg">
                   Loading voice settings...
                 </p>
               </div>
@@ -237,15 +279,15 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
 
         {/* Chat History Display */}
         <motion.div
-          className={`flex-1 w-full max-w-4xl mb-6 relative transition-all duration-500 ${
+          className={`flex-1 w-full max-w-4xl mb-3 sm:mb-6 relative transition-all duration-500 ${
             isButtonPressed ? "blur-sm" : ""
           }`}
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.3, duration: 0.6 }}
         >
-          <div className="h-[32rem] overflow-y-auto px-6 scrollbar-hide">
-            <div className="space-y-4">
+          <div className="h-[24rem] sm:h-[32rem] overflow-y-auto px-2 sm:px-6 scrollbar-hide">
+            <div className="space-y-2 sm:space-y-4">
               {/* Messages from database */}
               {sessionMessages?.map((message, index) => (
                 <motion.div
@@ -260,27 +302,21 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
                       message.role === "user"
                         ? "bg-gradient-to-r from-lime-500/20 to-green-500/20 border-lime-300/30"
                         : "bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border-blue-300/30"
-                    } rounded-2xl border p-4 max-w-md backdrop-blur-sm`}
+                    } rounded-2xl border p-3 sm:p-4 max-w-xs sm:max-w-md backdrop-blur-sm`}
                   >
-                    <div className="flex items-center gap-2 mb-1">
+                    <div className="flex items-center gap-1 sm:gap-2 mb-1">
                       <div
-                        className={`w-2 h-2 rounded-full ${
+                        className={`w-1.5 h-1.5 sm:w-2 sm:h-2 rounded-full ${
                           message.role === "user"
                             ? "bg-lime-400"
                             : "bg-blue-400"
                         }`}
                       ></div>
-                      <p
-                        className={`text-xs font-medium ${
-                          message.role === "user"
-                            ? "text-lime-200"
-                            : "text-blue-200"
-                        }`}
-                      >
+                      <span className="text-lime-200 text-xs font-medium">
                         {message.role === "user" ? "You" : "PANDA"}
-                      </p>
+                      </span>
                     </div>
-                    <p className="text-white text-sm leading-relaxed">
+                    <p className="text-white text-xs sm:text-sm leading-relaxed">
                       {message.content}
                     </p>
                   </div>
@@ -294,20 +330,16 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6 }}
-                    className="space-y-4"
+                    className="space-y-1"
                   >
-                    <div className="text-6xl mb-4">💫</div>
-                    <h2 className="text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200">
-                      Welcome to Your AI Companion
+                    <div className="text-4xl sm:text-6xl mb-2 sm:mb-4">🐼</div>
+                    <h2 className="text-lg sm:text-2xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-blue-200 to-indigo-200 px-2">
+                      Welcome to Your PANDA Companion
                     </h2>
-                    <p className="text-lg text-blue-200/80 max-w-md mx-auto">
+                    <p className="text-xs sm:text-sm text-blue-200/80 max-w-md mx-auto px-2">
                       I&apos;m here to listen and support you. Press and hold
                       the button below to start our conversation.
                     </p>
-                    <div className="flex items-center justify-center gap-2 text-blue-300/60 text-sm mt-6">
-                      <div className="w-2 h-2 bg-lime-400 rounded-full animate-pulse"></div>
-                      <span>Ready to listen</span>
-                    </div>
                   </motion.div>
                 </div>
               )}
@@ -329,18 +361,18 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
               transition={{ duration: 0.3 }}
             >
               {/* Ocean Wave Container */}
-              <div className="relative w-80 h-80">
+              <div className="relative w-60 h-60">
                 {/* Ocean waves - multiple layers for depth */}
-                {[...Array(8)].map((_, i) => (
+                {[...Array(6)].map((_, i) => (
                   <motion.div
                     key={i}
                     className="absolute rounded-full border-2"
                     style={{
-                      width: 60 + i * 35,
-                      height: 60 + i * 35,
-                      left: `calc(50% - ${30 + i * 17.5}px)`,
-                      top: `calc(50% - ${30 + i * 17.5}px)`,
-                      borderColor: `rgba(52, 211, 153, ${0.6 - i * 0.06})`, // Emerald green like ocean
+                      width: 40 + i * 25,
+                      height: 40 + i * 25,
+                      left: `calc(50% - ${20 + i * 12.5}px)`,
+                      top: `calc(50% - ${20 + i * 12.5}px)`,
+                      borderColor: `rgba(52, 211, 153, ${0.5 - i * 0.05})`, // Emerald green like ocean
                     }}
                     animate={{
                       scale: [1, 1.1, 0.95, 1.05, 1],
@@ -357,16 +389,16 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
                 ))}
 
                 {/* Inner water ripples */}
-                {[...Array(12)].map((_, i) => (
+                {[...Array(8)].map((_, i) => (
                   <motion.div
                     key={`ripple-${i}`}
                     className="absolute rounded-full"
                     style={{
-                      width: 20 + i * 15,
-                      height: 20 + i * 15,
-                      left: `calc(50% - ${10 + i * 7.5}px)`,
-                      top: `calc(50% - ${10 + i * 7.5}px)`,
-                      background: `radial-gradient(circle, rgba(52, 211, 153, ${0.4 - i * 0.03}) 0%, transparent 70%)`,
+                      width: 15 + i * 10,
+                      height: 15 + i * 10,
+                      left: `calc(50% - ${7.5 + i * 5}px)`,
+                      top: `calc(50% - ${7.5 + i * 5}px)`,
+                      background: `radial-gradient(circle, rgba(52, 211, 153, ${0.3 - i * 0.025}) 0%, transparent 70%)`,
                     }}
                     animate={{
                       scale: [0.8, 1.2, 0.9, 1.1, 0.8],
@@ -385,7 +417,7 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
 
                 {/* Central water surface */}
                 <motion.div
-                  className="absolute w-16 h-16 left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full"
+                  className="absolute w-12 h-12 left-1/2 top-1/2 transform -translate-x-1/2 -translate-y-1/2 rounded-full"
                   style={{
                     background:
                       "radial-gradient(circle, rgba(16, 185, 129, 0.8) 0%, rgba(52, 211, 153, 0.6) 40%, rgba(79, 70, 229, 0.4) 100%)",
@@ -432,12 +464,12 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
                       ease: "easeInOut",
                     }}
                   >
-                    🎤
+                    🐼
                   </motion.div>
                 </motion.div>
 
                 {/* Floating water particles */}
-                {[...Array(20)].map((_, i) => (
+                {[...Array(15)].map((_, i) => (
                   <motion.div
                     key={`particle-${i}`}
                     className="absolute w-1 h-1 bg-emerald-300/60 rounded-full"
@@ -503,17 +535,27 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
               e.stopPropagation();
               handlePushToTalkEnd(); // Always stop when touch is cancelled
             }}
-            disabled={!isSessionActive}
-            className="relative w-28 h-28 mx-auto"
+            disabled={
+              !isSessionActive || isTranscribing || isThinking || isSpeaking
+            }
+            className={`relative w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 mx-auto transition-all duration-200 ${
+              !isSessionActive || isTranscribing || isThinking || isSpeaking
+                ? "cursor-not-allowed opacity-60"
+                : "cursor-pointer"
+            }`}
             whileHover={
-              isSessionActive
+              isSessionActive && !isTranscribing && !isThinking && !isSpeaking
                 ? {
-                    scale: 1.05,
-                    y: -2,
+                    scale: 1.03,
+                    y: -1,
                   }
                 : {}
             }
-            whileTap={isSessionActive ? { scale: 0.95 } : {}}
+            whileTap={
+              isSessionActive && !isTranscribing && !isThinking && !isSpeaking
+                ? { scale: 0.95 }
+                : {}
+            }
           >
             {/* Outer orbital rings */}
             <motion.div
@@ -560,23 +602,32 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
               className={`w-full h-full rounded-full flex items-center justify-center shadow-2xl relative overflow-hidden ${
                 !isSessionActive
                   ? "bg-gradient-to-br from-gray-500 via-gray-600 to-gray-700 cursor-not-allowed opacity-50"
-                  : isRecording
-                    ? "bg-gradient-to-br from-blue-400 via-indigo-500 to-blue-500"
-                    : "bg-gradient-to-br from-blue-500 via-indigo-600 to-slate-600"
+                  : isTranscribing || isThinking || isSpeaking
+                    ? "bg-gradient-to-br from-orange-500 via-red-500 to-orange-600"
+                    : isRecording
+                      ? "bg-gradient-to-br from-blue-400 via-indigo-500 to-blue-500"
+                      : "bg-gradient-to-br from-blue-500 via-indigo-600 to-slate-600"
               }`}
               animate={{
-                scale: isButtonPressed ? [1, 1.1, 1] : [1, 1.08, 1],
-                boxShadow: isRecording
-                  ? [
-                      "0 30px 60px -12px rgb(59 130 246 / 0.8), 0 40px 80px -20px rgb(99 102 241 / 0.9), 0 0 40px rgb(147 197 253 / 0.7)",
-                      "0 40px 80px -12px rgb(59 130 246 / 1), 0 50px 100px -20px rgb(99 102 241 / 1), 0 0 60px rgb(147 197 253 / 0.9)",
-                      "0 30px 60px -12px rgb(59 130 246 / 0.8), 0 40px 80px -20px rgb(99 102 241 / 0.9), 0 0 40px rgb(147 197 253 / 0.7)",
-                    ]
-                  : [
-                      "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
-                      "0 25px 50px -12px rgb(59 130 246 / 0.4), 0 25px 50px -12px rgb(99 102 241 / 0.4)",
-                      "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)",
-                    ],
+                scale: isButtonPressed ? [1, 1.05, 1] : [1, 1.04, 1],
+                boxShadow:
+                  isTranscribing || isThinking || isSpeaking
+                    ? [
+                        "0 20px 40px -8px rgb(234 88 12 / 0.7), 0 25px 50px -12px rgb(239 68 68 / 0.8), 0 0 25px rgb(251 146 60 / 0.6)",
+                        "0 25px 50px -8px rgb(234 88 12 / 0.9), 0 30px 60px -12px rgb(239 68 68 / 0.9), 0 0 35px rgb(251 146 60 / 0.8)",
+                        "0 20px 40px -8px rgb(234 88 12 / 0.7), 0 25px 50px -12px rgb(239 68 68 / 0.8), 0 0 25px rgb(251 146 60 / 0.6)",
+                      ]
+                    : isRecording
+                      ? [
+                          "0 20px 40px -8px rgb(59 130 246 / 0.7), 0 25px 50px -12px rgb(99 102 241 / 0.8), 0 0 25px rgb(147 197 253 / 0.6)",
+                          "0 25px 50px -8px rgb(59 130 246 / 0.9), 0 30px 60px -12px rgb(99 102 241 / 0.9), 0 0 35px rgb(147 197 253 / 0.8)",
+                          "0 20px 40px -8px rgb(59 130 246 / 0.7), 0 25px 50px -12px rgb(99 102 241 / 0.8), 0 0 25px rgb(147 197 253 / 0.6)",
+                        ]
+                      : [
+                          "0 15px 20px -3px rgb(0 0 0 / 0.1), 0 6px 8px -4px rgb(0 0 0 / 0.1)",
+                          "0 18px 35px -8px rgb(59 130 246 / 0.3), 0 18px 35px -8px rgb(99 102 241 / 0.3)",
+                          "0 15px 20px -3px rgb(0 0 0 / 0.1), 0 6px 8px -4px rgb(0 0 0 / 0.1)",
+                        ],
               }}
               transition={{
                 duration: isButtonPressed ? 1.5 : 3,
@@ -605,19 +656,22 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
               <motion.div className="relative z-10 flex items-center justify-center">
                 <motion.div
                   animate={{
-                    scale: isRecording ? [1, 1.2, 1] : [1, 1.1, 1],
+                    scale: isRecording ? [1, 1.15, 1] : [1, 1.08, 1],
                     filter: [
                       "brightness(1) hue-rotate(0deg)",
-                      "brightness(1.2) hue-rotate(10deg)",
+                      "brightness(1.1) hue-rotate(5deg)",
                       "brightness(1) hue-rotate(0deg)",
                     ],
                   }}
                   transition={{
-                    duration: isRecording ? 1 : 2,
+                    duration: isRecording ? 0.8 : 1.5,
                     repeat: Infinity,
                   }}
                 >
-                  <IconMicrophone size={28} className="text-white" />
+                  <IconMicrophone
+                    size={isRecording ? 32 : 28}
+                    className="text-white sm:w-8 sm:h-8 md:w-9 md:h-9"
+                  />
                 </motion.div>
               </motion.div>
 
@@ -680,16 +734,16 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
             ].map((particle, i) => (
               <motion.div
                 key={i}
-                className={`absolute w-6 h-6 ${particle.color} rounded-full flex items-center justify-center text-xs font-bold shadow-lg`}
+                className={`absolute w-4 h-4 ${particle.color} rounded-full flex items-center justify-center text-xs font-bold shadow-md`}
                 style={{
-                  top: `${50 + Math.cos((particle.angle * Math.PI) / 180) * particle.radius}%`,
-                  left: `${50 + Math.sin((particle.angle * Math.PI) / 180) * particle.radius}%`,
+                  top: `${50 + Math.cos((particle.angle * Math.PI) / 180) * (particle.radius * 0.8)}%`,
+                  left: `${50 + Math.sin((particle.angle * Math.PI) / 180) * (particle.radius * 0.8)}%`,
                   transform: "translate(-50%, -50%)",
                 }}
                 animate={{
-                  y: [0, -10, 0],
+                  y: [0, -6, 0],
                   rotate: [0, 360],
-                  scale: [1, 1.3, 1],
+                  scale: [1, 1.2, 1],
                   opacity: [0.6, 1, 0.6],
                 }}
                 transition={{
@@ -709,59 +763,83 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
                 isRecording ? "border-blue-300/60" : "border-blue-400/30"
               }`}
               animate={{
-                scale: [1, 1.3, 1],
+                scale: [1, 1.2, 1],
                 opacity: isRecording ? [0.8, 0.2, 0.8] : [0.6, 0, 0.6],
                 rotate: [0, 180, 360],
               }}
-              transition={{ duration: 4, repeat: Infinity }}
+              transition={{ duration: 3, repeat: Infinity }}
             />
             <motion.div
               className={`absolute inset-0 rounded-full border-2 ${
                 isRecording ? "border-indigo-300/60" : "border-indigo-400/30"
               }`}
               animate={{
-                scale: [1, 1.5, 1],
+                scale: [1, 1.3, 1],
                 opacity: isRecording ? [0.6, 0.1, 0.6] : [0.4, 0, 0.4],
                 rotate: [360, 180, 0],
               }}
-              transition={{ duration: 4, repeat: Infinity, delay: 0.5 }}
+              transition={{ duration: 3, repeat: Infinity, delay: 0.4 }}
             />
             <motion.div
               className={`absolute inset-0 rounded-full border-2 ${
                 isRecording ? "border-sky-300/60" : "border-slate-400/30"
               }`}
               animate={{
-                scale: [1, 1.7, 1],
+                scale: [1, 1.4, 1],
                 opacity: isRecording ? [0.5, 0.1, 0.5] : [0.3, 0, 0.3],
                 rotate: [0, 360],
               }}
-              transition={{ duration: 4, repeat: Infinity, delay: 1 }}
+              transition={{ duration: 3, repeat: Infinity, delay: 0.8 }}
             />
 
             {/* Recording pulse indicator */}
             {isRecording && (
               <motion.div
-                className="absolute -top-2 -right-2 w-6 h-6 bg-blue-400 rounded-full border-2 border-white flex items-center justify-center shadow-lg"
+                className="absolute -top-1 -right-1 w-5 h-5 bg-blue-400 rounded-full border-2 border-white flex items-center justify-center shadow-md"
                 style={{
                   boxShadow:
-                    "0 0 20px rgba(59, 130, 246, 0.8), 0 0 40px rgba(147, 197, 253, 0.6)",
+                    "0 0 15px rgba(59, 130, 246, 0.7), 0 0 25px rgba(147, 197, 253, 0.5)",
                 }}
                 animate={{
-                  scale: [1, 1.4, 1],
+                  scale: [1, 1.3, 1],
                   opacity: [1, 0.8, 1],
                   boxShadow: [
-                    "0 0 20px rgba(59, 130, 246, 0.8), 0 0 40px rgba(147, 197, 253, 0.6)",
-                    "0 0 30px rgba(59, 130, 246, 1), 0 0 60px rgba(147, 197, 253, 0.9)",
-                    "0 0 20px rgba(59, 130, 246, 0.8), 0 0 40px rgba(147, 197, 253, 0.6)",
+                    "0 0 15px rgba(59, 130, 246, 0.7), 0 0 25px rgba(147, 197, 253, 0.5)",
+                    "0 0 20px rgba(59, 130, 246, 0.9), 0 0 35px rgba(147, 197, 253, 0.8)",
+                    "0 0 15px rgba(59, 130, 246, 0.7), 0 0 25px rgba(147, 197, 253, 0.5)",
                   ],
                 }}
                 transition={{
-                  duration: 0.6,
+                  duration: 0.5,
                   repeat: Infinity,
                   ease: "easeInOut",
                 }}
               >
-                <div className="w-2 h-2 bg-white rounded-full" />
+                <div className="w-1.5 h-1.5 bg-white rounded-full" />
+              </motion.div>
+            )}
+
+            {/* Processing overlay indicator */}
+            {(isTranscribing || isThinking || isSpeaking) && (
+              <motion.div
+                className="absolute inset-0 bg-black/30 rounded-full flex items-center justify-center"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+              >
+                <motion.div
+                  className="text-white text-lg"
+                  animate={{
+                    rotate: isTranscribing ? [0, 360] : 0,
+                    scale: [1, 1.1, 1],
+                  }}
+                  transition={{
+                    rotate: { duration: 2, repeat: Infinity, ease: "linear" },
+                    scale: { duration: 1.5, repeat: Infinity },
+                  }}
+                >
+                  {isTranscribing ? "⏳" : isThinking ? "🤔" : "🔊"}
+                </motion.div>
               </motion.div>
             )}
           </motion.button>
@@ -769,26 +847,17 @@ export const VoiceAssistantView: FC<VoiceAssistantViewProps> = ({
 
         {/* Helper Text */}
         <motion.div
-          className="flex flex-col items-center mt-4"
+          className="flex flex-col items-center mt-1 sm:mt-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 1.2, duration: 0.6 }}
         >
-          <p className="text-red-200 text-base mb-1">
-            {isRecording
-              ? "🔴 Listening..."
-              : isTranscribing
-                ? "Processing..."
-                : isThinking
-                  ? "Thinking..."
-                  : isSpeaking
-                    ? "Speaking..."
-                    : "Hold to talk"}
-          </p>
-          <p className="text-red-300/60 text-sm">
-            {isSessionActive
-              ? "Speak clearly for best results"
-              : "Connecting..."}
+          <p className="text-red-300/60 text-xs text-center px-4">
+            {!isSessionActive
+              ? "Connecting..."
+              : isTranscribing || isThinking || isSpeaking
+                ? "Please wait for to finish..."
+                : "Speak clearly for best results"}
           </p>
         </motion.div>
       </div>

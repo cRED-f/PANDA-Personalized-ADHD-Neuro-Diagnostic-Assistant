@@ -358,6 +358,56 @@ export const saveVoiceCombinedText = mutation({
   },
 });
 
+// Import voice chat and messages
+export const importVoiceChat = mutation({
+  args: {
+    chatData: v.object({
+      chat: v.object({
+        title: v.string(),
+        createdAt: v.number(),
+        updatedAt: v.number(),
+      }),
+      messages: v.array(
+        v.object({
+          content: v.string(),
+          role: v.union(v.literal("user"), v.literal("assistant")),
+          timestamp: v.number(),
+        })
+      ),
+    }),
+  },
+  handler: async (ctx, args) => {
+    const now = Date.now();
+    const sessionId = `imported_${now}_${Math.random().toString(36).substr(2, 9)}`;
+
+    // Create the voice chat
+    const voiceChatId = await ctx.db.insert("voiceChats", {
+      title: args.chatData.chat.title,
+      sessionId: sessionId,
+      status: "completed",
+      startTime: args.chatData.chat.createdAt,
+      endTime: args.chatData.chat.updatedAt,
+      totalMessages: args.chatData.messages.length,
+      createdAt: now, // Use current timestamp for import
+      updatedAt: now,
+    });
+
+    // Insert all messages
+    for (const message of args.chatData.messages) {
+      const messageId = `imported_${now}_${Math.random().toString(36).substr(2, 9)}`;
+      await ctx.db.insert("voiceMessages", {
+        sessionId: sessionId,
+        messageId: messageId,
+        role: message.role,
+        content: message.content,
+        timestamp: message.timestamp,
+      });
+    }
+
+    return { voiceChatId, sessionId };
+  },
+});
+
 // Debug function to check database contents
 export const debugVoiceChats = query({
   handler: async (ctx) => {
