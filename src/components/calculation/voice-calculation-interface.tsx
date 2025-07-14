@@ -24,6 +24,7 @@ export const VoiceCalculationInterface: FC<VoiceCalculationInterfaceProps> = ({
   const [analysisResults, setAnalysisResults] = useState<string[]>([]);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState<string | null>(null);
+  const [totalScore, setTotalScore] = useState<number | null>(null);
 
   const [singleModelMode, setSingleModelMode] = useState(false);
   const [selectedSinglePrompt, setSelectedSinglePrompt] = useState<string>("");
@@ -128,6 +129,74 @@ export const VoiceCalculationInterface: FC<VoiceCalculationInterfaceProps> = ({
     return messages;
   };
 
+  // Function to extract overall score from analysis result text
+  const extractOverallScore = (result: string): number | null => {
+    try {
+      // Common patterns for overall scores
+      const scorePatterns = [
+        // Most common patterns first
+        /(?:overall\s*score|total\s*score|final\s*score)[\s\S]*?(\d+(?:\.\d+)?)\s*(?:\/100|out\sof\s100)?/i,
+        /(?:overall|total|final)[\s\S]*?score[\s\S]*?(\d+(?:\.\d+)?)\s*(?:\/100|out\sof\s100)?/i,
+        /\*\*(?:overall|total|final)\s*score\*\*[\s\S]*?(\d+(?:\.\d+)?)/i,
+        /(?:score|rating)[\s\S]*?(\d+(?:\.\d+)?)[\s\S]*?(?:\/100|out\sof\s100)/i,
+        // Look for patterns like "Score: 85" or "Score = 85"
+        /(?:score|rating)[\s\S]*?[:=]\s*(\d+(?:\.\d+)?)/i,
+        // Look for patterns at the end like "85/100" or "85 out of 100"
+        /(\d+(?:\.\d+)?)[\s\S]*?(?:\/100|out\sof\s100)/i,
+        // Look for standalone numbers followed by score indicators
+        /(\d+(?:\.\d+)?)\s*(?:points?|score|rating|\/100)/i,
+        // Catch any number that looks like a percentage or score
+        /(\d+(?:\.\d+)?)%/i,
+      ];
+
+      for (const pattern of scorePatterns) {
+        const match = result.match(pattern);
+        if (match && match[1]) {
+          const score = parseFloat(match[1]);
+          // Accept scores between 0-100, or if it's a percentage, convert it
+          if (!isNaN(score)) {
+            if (score >= 0 && score <= 100) {
+              return score;
+            } else if (score >= 0 && score <= 1) {
+              // Might be a decimal (0.85 = 85%)
+              return score * 100;
+            }
+          }
+        }
+      }
+
+      return null;
+    } catch (error) {
+      console.error("Error extracting voice score:", error);
+      return null;
+    }
+  };
+
+  // Function to calculate total score from all analysis results
+  const calculateTotalScore = useCallback(
+    (results: string[]): number | null => {
+      if (!results || results.length === 0) return null;
+
+      const scores: number[] = [];
+      results.forEach((result, index) => {
+        const score = extractOverallScore(result);
+        if (score !== null) {
+          scores.push(score);
+          console.log(`Voice Model ${index + 1} score: ${score}`);
+        } else {
+          console.log(`Voice Model ${index + 1}: No valid score found`);
+        }
+      });
+
+      if (scores.length === 0) return null;
+
+      const total = scores.reduce((sum, score) => sum + score, 0);
+      console.log(`Voice Total score: ${total} (from ${scores.length} models)`);
+      return total;
+    },
+    []
+  );
+
   const generateFilteredHistory = useCallback(
     (originalHistory: typeof conversationHistory) => {
       if (!originalHistory) return undefined;
@@ -187,6 +256,20 @@ export const VoiceCalculationInterface: FC<VoiceCalculationInterfaceProps> = ({
       setSelectedPrompts(Array(calculationSettings.modelNames.length).fill(""));
     }
   }, [calculationSettings]);
+
+  // Calculate total score whenever analysis results change
+  useEffect(() => {
+    if (analysisResults.length > 0 && !makeTextMode && !singleModelMode) {
+      const total = calculateTotalScore(analysisResults);
+      setTotalScore(total);
+    } else if (makeTextMode && analysisResults.length > 0) {
+      // Also calculate for Make Text mode
+      const total = calculateTotalScore(analysisResults);
+      setTotalScore(total);
+    } else {
+      setTotalScore(null);
+    }
+  }, [analysisResults, makeTextMode, singleModelMode, calculateTotalScore]);
 
   const handlePromptSelect = (index: number, promptId: string) => {
     const newSelectedPrompts = [...selectedPrompts];
@@ -973,13 +1056,29 @@ export const VoiceCalculationInterface: FC<VoiceCalculationInterfaceProps> = ({
                       ? "Voice Make Text Analysis Complete"
                       : "Voice Multi-Model Analysis Complete"}
                 </h3>
-                <button
-                  onClick={handleDeleteAndRestart}
-                  className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200"
-                  title="Delete analysis and restart"
-                >
-                  <IconTrash size={16} /> Delete & Restart
-                </button>
+                <div className="flex items-center gap-4">
+                  {/* Total Score Display - Show for multi-model analysis and make text analysis */}
+                  {!singleModelMode && totalScore !== null && (
+                    <div className="flex items-center gap-2 bg-purple-50 border border-purple-200 rounded-lg px-8 py-4">
+                      <span className="text-[30px] font-bold text-purple-700">
+                        Total Score:
+                      </span>
+                      <span className="text-[30px] font-bold text-purple-800">
+                        {totalScore.toFixed(1)}
+                      </span>
+                      <span className="text-[25px] text-purple-600">
+                        (out of 90)
+                      </span>
+                    </div>
+                  )}
+                  <button
+                    onClick={handleDeleteAndRestart}
+                    className="flex items-center gap-2 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg text-sm font-medium transition-colors duration-200"
+                    title="Delete analysis and restart"
+                  >
+                    <IconTrash size={16} /> Delete & Restart
+                  </button>
+                </div>
               </div>
               {/* Two Panel Layout: Left = Analysis Results (70%), Right = Combined Text (30%) */}
               <div className="flex-1 flex overflow-hidden">
