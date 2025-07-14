@@ -358,8 +358,13 @@ export class OpenAIService {
     try {
       const formData = new FormData();
       formData.append("file", audioFile);
-      formData.append("model", "gpt-4o-transcribe");
-      formData.append("response_format", "json");
+      formData.append("model", "whisper-1"); // Use the standard Whisper model for better accuracy
+      formData.append("response_format", "verbose_json"); // Get more detailed response with confidence
+      formData.append("language", "en"); // Specify English for better accuracy
+      formData.append("temperature", "0"); // Lower temperature for more consistent results
+      
+      // Add prompt to help with context and accuracy
+      formData.append("prompt", "This is a conversation about a child's behavior, ADHD, autism, school, daily activities, emotions, and family interactions. The speaker may mention specific behaviors, challenges, or observations about their child.");
 
       console.log("🎤 Transcribing audio with Whisper...");
 

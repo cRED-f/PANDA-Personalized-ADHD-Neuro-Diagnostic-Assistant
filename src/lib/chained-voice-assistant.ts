@@ -63,13 +63,15 @@ export class ChainedVoiceAssistant {
     try {
       this.updateStatus("recording");
 
-      // Get microphone access
+      // Get microphone access with enhanced audio quality settings
       const stream = await navigator.mediaDevices.getUserMedia({
         audio: {
           echoCancellation: true,
           noiseSuppression: true,
           autoGainControl: true,
-          sampleRate: 16000,
+          sampleRate: 44100, // Higher sample rate for better quality
+          channelCount: 1, // Mono for speech recognition
+          sampleSize: 16, // 16-bit samples
         },
       });
 
@@ -104,8 +106,8 @@ export class ChainedVoiceAssistant {
         this.updateStatus("error");
       };
 
-      // Start recording
-      this.mediaRecorder.start(100); // Collect data every 100ms
+      // Start recording with smaller intervals for better quality
+      this.mediaRecorder.start(250); // Collect data every 250ms for better audio quality
       this.isRecording = true;
     } catch (error) {
       console.error("Failed to start recording:", error);
@@ -215,7 +217,7 @@ export class ChainedVoiceAssistant {
         throw new Error("No audio data recorded. Please try speaking again.");
       }
 
-      if (audioBlob.size < 1000) {
+      if (audioBlob.size < 2000) {
         throw new Error(
           "Audio recording too short. Please hold the button longer and speak clearly."
         );
@@ -225,15 +227,19 @@ export class ChainedVoiceAssistant {
       let fileName = "recording.webm";
       const mimeType = audioBlob.type;
 
-      if (audioBlob.type.includes("webm")) {
+      if (mimeType.includes("opus") || mimeType.includes("webm")) {
         fileName = "recording.webm";
-      } else if (audioBlob.type.includes("mp4")) {
-        fileName = "recording.mp4";
-      } else if (audioBlob.type.includes("wav")) {
+      } else if (mimeType.includes("wav")) {
         fileName = "recording.wav";
-      } else if (audioBlob.type.includes("ogg")) {
+      } else if (mimeType.includes("mp4") || mimeType.includes("m4a")) {
+        fileName = "recording.m4a";
+      } else if (mimeType.includes("ogg")) {
         fileName = "recording.ogg";
       }
+
+      console.log(
+        `🔊 Audio blob details: size=${audioBlob.size} bytes, type=${mimeType}, duration=~${(audioBlob.size / 16000).toFixed(1)}s`
+      );
 
       // Convert blob to File for OpenAI API with correct type
       const audioFile = new File([audioBlob], fileName, {
@@ -243,15 +249,58 @@ export class ChainedVoiceAssistant {
       const result = await this.openAIService.transcribeAudio(audioFile);
 
       if (!result || !result.text) {
+        console.log("⚠️ Empty transcription result:", result);
         throw new Error(
           "Speech not recognized. Please speak clearly and try again."
         );
       }
 
-      return result.text.trim();
+      const transcriptText = result.text.trim();
+      console.log(
+        `📝 Transcription result: "${transcriptText}" (${transcriptText.length} characters)`
+      );
+
+      if (transcriptText.length < 2) {
+        throw new Error(
+          "Speech too short or unclear. Please speak longer and more clearly."
+        );
+      }
+
+      return transcriptText;
     } catch (error) {
       console.error("Transcription failed:", error);
-      throw new Error("Speech-to-text failed");
+
+      // Provide more specific error messages based on the error type
+      if (error instanceof Error) {
+        if (
+          error.message.includes("network") ||
+          error.message.includes("connection")
+        ) {
+          throw new Error(
+            "Network connection issue. Please check your internet and try again."
+          );
+        } else if (
+          error.message.includes("rate limit") ||
+          error.message.includes("quota")
+        ) {
+          throw new Error(
+            "Service temporarily unavailable. Please try again in a moment."
+          );
+        } else if (
+          error.message.includes("format") ||
+          error.message.includes("codec")
+        ) {
+          throw new Error(
+            "Audio format not supported. Please try recording again."
+          );
+        } else {
+          throw error; // Preserve the original error message
+        }
+      }
+
+      throw new Error(
+        "Speech-to-text failed. Please speak clearly and try again."
+      );
     }
   }
 
@@ -358,19 +407,23 @@ export class ChainedVoiceAssistant {
   }
 
   private getSupportedMimeType(): string {
+    // Prioritize formats that work best with OpenAI Whisper
     const mimeTypes = [
-      "audio/webm;codecs=opus",
+      "audio/webm;codecs=opus", // Best for speech recognition
+      "audio/wav", // High quality, good for speech
       "audio/webm",
       "audio/mp4",
-      "audio/wav",
+      "audio/ogg",
     ];
 
     for (const mimeType of mimeTypes) {
       if (MediaRecorder.isTypeSupported(mimeType)) {
+        console.log(`🎙️ Using audio format: ${mimeType}`);
         return mimeType;
       }
     }
 
+    console.log("🎙️ Using fallback audio format: audio/webm");
     return "audio/webm"; // Fallback
   }
 
