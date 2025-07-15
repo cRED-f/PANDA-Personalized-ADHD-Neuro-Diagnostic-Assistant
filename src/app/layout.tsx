@@ -3,8 +3,8 @@ import "./globals.css";
 import { ConvexClientProvider } from "@/components/ConvexProvider";
 
 export const metadata: Metadata = {
-  title: "Chatbot UI",
-  description: "A modern chatbot interface powered by Convex",
+  title: "PANDA",
+  description: "Personalized ADHD Neuro Diagnostic Assistant",
 };
 
 export default function RootLayout({
