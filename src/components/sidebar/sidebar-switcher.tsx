@@ -55,14 +55,14 @@ export const SidebarSwitcher: FC<SidebarSwitcherProps> = ({
             color="from-pink-500 to-rose-600"
             hoverColor="hover:from-pink-600 hover:to-rose-700"
           /> */}
-          {/* <SidebarSwitchItem
+          <SidebarSwitchItem
             icon={<IconPencil size={20} />}
             contentType="prompts"
             onContentTypeChange={onContentTypeChange}
             tooltip="Prompts"
             color="from-green-500 to-emerald-600"
             hoverColor="hover:from-green-600 hover:to-emerald-700"
-          /> */}
+          />
           <SidebarSwitchItem
             icon={<IconCalculator size={20} />}
             contentType="calculate-score"
@@ -83,14 +83,14 @@ export const SidebarSwitcher: FC<SidebarSwitcherProps> = ({
             color="from-purple-500 to-violet-600"
             hoverColor="hover:from-purple-600 hover:to-violet-700"
           />
-          {/* <SidebarSwitchItem
+          <SidebarSwitchItem
             icon={<IconAdjustments size={20} />}
             contentType="calculation-settings"
             onContentTypeChange={onContentTypeChange}
             tooltip="Calculation Settings"
             color="from-teal-500 to-cyan-600"
             hoverColor="hover:from-teal-600 hover:to-cyan-700"
-          /> */}
+          />
           <SidebarSwitchItem
             icon={<IconDownload size={20} />}
             contentType="import-export"
