@@ -1,51 +1,54 @@
-# Modern AI Chat Interface
+# PANDA: Personalized ADHD Neuro Diagnostic Assistant
 
-A developer-focused chat interface built with Next.js, TypeScript, Tailwind CSS, and Convex database. Features a clean, modern design with real-time messaging, conversation management, and AI model integration.
+PANDA (Personalized Attention-Deficit/Hyperactivity Disorder Neuro Diagnostic Assistant) is a conversational screening support platform that helps caregivers describe ADHD-related behaviors through natural dialogue (text or voice), while the system tracks coverage of key symptom indicators and produces structured, assessment-oriented outputs.
 
+
+---
+
+## What PANDA Does
+
+- **Conversational ADHD screening** through natural dialogue (instead of rigid questionnaires)
+- **Tracks assessment progress** during the session to reduce missed areas
+- **Post-session scoring pipeline** that extracts evidence from the transcript and generates structured symptom scoring outputs
+- **Multi-domain scoring** using a domain-split analysis approach (Oppositional, Cognitive, Hyperactivity, ADHD Index), merged into a final report
+- **Voice mode** using speech-to-text and text-to-speech
+- **Expanded coverage** to include autism spectrum–related assessment areas
+
+---
+
+## System Overview
+
+High-level flow:
+
+1. User completes a **text or voice** conversation session.
+2. The system uses a **conversation framework** plus an **internal tracking method** to keep the interaction natural while still covering symptom areas.
+3. Session transcripts are stored for scoring and review.
+4. After the session, PANDA runs a **multi-model scoring pipeline** that analyzes distinct domains independently and then merges the outputs into a consolidated assessment.
+<img width="1182" height="672" alt="architecture" src="https://github.com/user-attachments/assets/8775eed4-4dcc-40fa-b64c-9215b625fa08" />
+
+---
 ![Next.js](https://img.shields.io/badge/Next.js-15.0-black)
 ![TypeScript](https://img.shields.io/badge/TypeScript-5.0-blue)
 ![Tailwind](https://img.shields.io/badge/Tailwind-3.0-blue)
 
 ## 🤷‍♂️ Demo
 
-![demo1](https://github.com/user-attachments/assets/304f8354-ca8f-464b-a7e8-6efcd4c7cb6c)
-![demo2](https://github.com/user-attachments/assets/16259eee-c253-416a-80b7-e12d72275590)
-![demo5](https://github.com/user-attachments/assets/22875192-4ed1-4f21-8f5e-5614f700eea7)
-![demo4](https://github.com/user-attachments/assets/11299a8c-c755-40bc-8d89-24372cfe40bf)
-![demo3](https://github.com/user-attachments/assets/0f9f0d6c-c786-4e31-8a1b-1dc1c6279c43)
 
-## ✨ Features
+<img width="1917" height="875" alt="pandaUI" src="https://github.com/user-attachments/assets/d8abb50d-effa-4e94-b52f-9aa2d567eeed" />
+<img width="1361" height="795" alt="demo1" src="https://github.com/user-attachments/assets/cd025266-6ee0-4dfd-9688-0fb714e05f4f" />
+<img width="1578" height="906" alt="calculate score" src="https://github.com/user-attachments/assets/dc4d8ccd-f1e0-4130-9087-3a33f73bfc32" />
 
-### 🎯 Core Functionality
+## Evaluation Snapshot
 
-- **Real-time Conversations**: Instant messaging with AI models
-- **Multiple Chat Sessions**: Create and manage unlimited conversations
-- **Persistent History**: All conversations stored securely in Convex database
-- **Prompt Templates**: Pre-built prompts for different use cases
-- **Model Configuration**: Customizable AI parameters (temperature, context length)
+Quantitative results reported on a 10-sample evaluation set:
 
-### 🎨 User Experience
+- **Item alignment:** 83.33% to 94.44%
+- **Question coverage:** 78.79% to 85.71%
+- **Response mapping accuracy:** 82.00% to 86.00% (reported as ~85% overall in the abstract)
+- **Latency:** ~1 second per exchange
+- **Typical full session time:** ~20 to 30 minutes (with longer sessions for more complex cases)
 
-- **Modern Interface**: Clean, intuitive design inspired by modern chat applications
-- **Responsive Design**: Works seamlessly on desktop, tablet, and mobile
-- **Smooth Animations**: Framer Motion powered transitions
-- **Real-time Updates**: Live conversation synchronization
-
-### ⚙️ Technical Features
-
-- **OpenRouter Integration**: Support for multiple AI models (GPT-4, Claude, Llama, etc.)
-- **System Prompts**: Configurable AI behavior and personality
-- **Message Management**: Edit, regenerate, and delete messages
-- **Export Conversations**: Download chat history
-- **No Authentication Required**: Start chatting immediately
-
-### 🔧 Developer Friendly
-
-- **TypeScript**: Full type safety throughout the application
-- **Modular Components**: Reusable, well-structured React components
-- **Real-time Database**: Convex for instant data synchronization
-- **Easy Deployment**: One-click deploy to Vercel
-- **Environment Configuration**: Secure API key management
+---
 
 ## 🚀 Quick Start
 
@@ -175,37 +178,7 @@ NEXT_PUBLIC_APP_NAME=Modern AI Chat
 NEXT_PUBLIC_DEFAULT_MODEL=anthropic/claude-3.5-sonnet
 ```
 
-## 🎨 Customization
 
-### Theming
-
-The application uses Tailwind CSS with CSS variables for theming. Customize colors in `src/app/globals.css`:
-
-```css
-:root {
-  --primary: 222.2 84% 4.9%;
-  --primary-foreground: 210 40% 98%;
-  /* Add your custom colors */
-}
-```
-
-### Adding New AI Providers
-
-1. Create a new service in `src/lib/`
-2. Implement the standard interface defined in `openrouter-service.ts`
-3. Update the settings component to include your provider
-
-### Custom Components
-
-All components are modular and can be easily customized:
-
-- Modify styling with Tailwind classes
-- Add new functionality by extending existing hooks
-- Create new components following the established patterns
-
-## 🤝 Contributing
-
-We welcome contributions!
 
 ## 🙏 Acknowledgments
 
